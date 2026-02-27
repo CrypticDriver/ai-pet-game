@@ -1,0 +1,13 @@
+services:
+  ai-pet:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    volumes:
+      - pet-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  pet-data:

@@ -199,6 +199,14 @@ setTimeout(() => {
   try { generateNotifications(); } catch {}
 }, 5000);
 
+// ---- SPA fallback (production) ----
+
+if (fs.existsSync(distClient)) {
+  app.setNotFoundHandler(async (_req, reply) => {
+    return reply.sendFile("index.html");
+  });
+}
+
 // ---- Start server ----
 
 const PORT = parseInt(process.env.PORT || "3000");
