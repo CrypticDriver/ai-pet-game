@@ -8,6 +8,15 @@ interface Props {
   onAction: (action: "feed" | "play" | "rest") => Promise<void>;
 }
 
+// Map emotions to external SVG filenames from Design team
+const EMOTION_SVG_MAP: Record<string, string> = {
+  happy: "/assets/pet/pet-happy.svg",
+  sad: "/assets/pet/pet-sad.svg",
+  sleepy: "/assets/pet/pet-sleepy.svg",
+  neutral: "/assets/pet/pet-neutral.svg",
+  excited: "/assets/pet/pet-excited.svg",
+};
+
 export function PetView({ pet, onAction }: Props) {
   const [cooldown, setCooldown] = useState<Record<string, number>>({});
   const theme = SKIN_THEMES[pet.skin_id] || SKIN_THEMES.default;

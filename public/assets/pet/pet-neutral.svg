@@ -1,0 +1,30 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Neutral Expression -->
+  <!-- Body -->
+  <rect x="32" y="48" width="64" height="48" fill="#D3D3D3" stroke="#000" stroke-width="2"/>
+  
+  <!-- Head -->
+  <rect x="40" y="24" width="48" height="32" fill="#D3D3D3" stroke="#000" stroke-width="2"/>
+  
+  <!-- Eyes - Neutral (o o) -->
+  <circle cx="52" cy="38" r="4" fill="#000"/>
+  <circle cx="76" cy="38" r="4" fill="#000"/>
+  
+  <!-- Mouth - Neutral line -->
+  <line x1="52" y1="48" x2="76" y2="48" stroke="#000" stroke-width="2"/>
+  
+  <!-- Ears -->
+  <rect x="32" y="16" width="16" height="16" fill="#D3D3D3" stroke="#000" stroke-width="2"/>
+  <rect x="80" y="16" width="16" height="16" fill="#D3D3D3" stroke="#000" stroke-width="2"/>
+  
+  <!-- Arms -->
+  <rect x="16" y="56" width="16" height="24" fill="#D3D3D3" stroke="#000" stroke-width="2"/>
+  <rect x="96" y="56" width="16" height="24" fill="#D3D3D3" stroke="#000" stroke-width="2"/>
+  
+  <!-- Legs -->
+  <rect x="40" y="96" width="16" height="24" fill="#D3D3D3" stroke="#000" stroke-width="2"/>
+  <rect x="72" y="96" width="16" height="24" fill="#D3D3D3" stroke="#000" stroke-width="2"/>
+  
+  <!-- Tail - Neutral position -->
+  <path d="M 96 64 Q 108 60 112 68 Q 108 76 96 76" fill="#D3D3D3" stroke="#000" stroke-width="2"/>
+</svg>

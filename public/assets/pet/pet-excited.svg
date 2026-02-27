@@ -1,0 +1,38 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Excited Expression -->
+  <!-- Body -->
+  <rect x="32" y="48" width="64" height="48" fill="#FF6347" stroke="#000" stroke-width="2"/>
+  
+  <!-- Head -->
+  <rect x="40" y="24" width="48" height="32" fill="#FF6347" stroke="#000" stroke-width="2"/>
+  
+  <!-- Eyes - Sparkling (*_*) -->
+  <circle cx="52" cy="38" r="6" fill="#FFF" stroke="#000" stroke-width="2"/>
+  <circle cx="76" cy="38" r="6" fill="#FFF" stroke="#000" stroke-width="2"/>
+  <path d="M 52 34 L 50 38 L 54 38 L 52 42 L 52 38" fill="#FFD700" stroke="#FFD700"/>
+  <path d="M 76 34 L 74 38 L 78 38 L 76 42 L 76 38" fill="#FFD700" stroke="#FFD700"/>
+  
+  <!-- Big Smile -->
+  <path d="M 48 46 Q 64 54 80 46" stroke="#000" stroke-width="3" fill="none"/>
+  
+  <!-- Ears - Very perked -->
+  <rect x="32" y="8" width="16" height="24" fill="#FF6347" stroke="#000" stroke-width="2"/>
+  <rect x="80" y="8" width="16" height="24" fill="#FF6347" stroke="#000" stroke-width="2"/>
+  
+  <!-- Arms - Raised -->
+  <rect x="12" y="48" width="16" height="24" fill="#FF6347" stroke="#000" stroke-width="2" transform="rotate(-20 20 60)"/>
+  <rect x="100" y="48" width="16" height="24" fill="#FF6347" stroke="#000" stroke-width="2" transform="rotate(20 108 60)"/>
+  
+  <!-- Legs - Jumping -->
+  <rect x="40" y="96" width="16" height="20" fill="#FF6347" stroke="#000" stroke-width="2"/>
+  <rect x="72" y="96" width="16" height="20" fill="#FF6347" stroke="#000" stroke-width="2"/>
+  
+  <!-- Tail - Very wagging -->
+  <path d="M 96 64 Q 116 48 124 60 Q 116 72 96 76" fill="#FF6347" stroke="#000" stroke-width="2"/>
+  
+  <!-- Energy particles -->
+  <circle cx="20" cy="44" r="4" fill="#FFD700"/>
+  <circle cx="108" cy="44" r="4" fill="#FFD700"/>
+  <circle cx="16" cy="60" r="3" fill="#FFD700"/>
+  <circle cx="112" cy="60" r="3" fill="#FFD700"/>
+</svg>

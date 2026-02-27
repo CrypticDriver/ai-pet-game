@@ -1,0 +1,34 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Happy Expression -->
+  <!-- Body -->
+  <rect x="32" y="48" width="64" height="48" fill="#FFD700" stroke="#000" stroke-width="2"/>
+  
+  <!-- Head -->
+  <rect x="40" y="24" width="48" height="32" fill="#FFD700" stroke="#000" stroke-width="2"/>
+  
+  <!-- Eyes - Happy (^_^) -->
+  <path d="M 48 38 L 52 34 L 56 38" stroke="#000" stroke-width="2" fill="none"/>
+  <path d="M 72 38 L 76 34 L 80 38" stroke="#000" stroke-width="2" fill="none"/>
+  
+  <!-- Smile -->
+  <path d="M 52 46 Q 64 52 76 46" stroke="#000" stroke-width="2" fill="none"/>
+  
+  <!-- Ears - Perked up -->
+  <rect x="32" y="12" width="16" height="20" fill="#FFD700" stroke="#000" stroke-width="2"/>
+  <rect x="80" y="12" width="16" height="20" fill="#FFD700" stroke="#000" stroke-width="2"/>
+  
+  <!-- Arms -->
+  <rect x="16" y="56" width="16" height="24" fill="#FFD700" stroke="#000" stroke-width="2"/>
+  <rect x="96" y="56" width="16" height="24" fill="#FFD700" stroke="#000" stroke-width="2"/>
+  
+  <!-- Legs - Bouncy stance -->
+  <rect x="40" y="96" width="16" height="24" fill="#FFD700" stroke="#000" stroke-width="2"/>
+  <rect x="72" y="96" width="16" height="24" fill="#FFD700" stroke="#000" stroke-width="2"/>
+  
+  <!-- Tail - Wagging up -->
+  <path d="M 96 64 Q 112 48 120 56 Q 112 64 96 72" fill="#FFD700" stroke="#000" stroke-width="2"/>
+  
+  <!-- Sparkles -->
+  <circle cx="24" cy="32" r="3" fill="#FFF"/>
+  <circle cx="104" cy="32" r="3" fill="#FFF"/>
+</svg>
