@@ -64,7 +64,7 @@
 | 层级 | 技术 | 用途 |
 |------|------|------|
 | AI 引擎 | `@mariozechner/pi-agent-core` | 宠物 Agent 管理 |
-| AI 模型 | `@mariozechner/pi-ai` (Anthropic Claude) | 对话生成 |
+| AI 模型 | `@mariozechner/pi-ai` (Anthropic Claude via **Bedrock** 或直连) | 对话生成 |
 | 后端 | Fastify 5 + TypeScript | REST API + WebSocket |
 | 数据库 | SQLite (better-sqlite3) | 用户/宠物/商品/对话 |
 | 前端 | React 19 + Vite 6 | SPA 单页应用 |
@@ -101,13 +101,28 @@ npm install
 
 ```bash
 cp .env.example .env
-# 编辑 .env，填入你的 Anthropic API key
+# 编辑 .env，选择你的 AI 提供商
 ```
 
+#### 方式一：Amazon Bedrock（推荐）
+
 ```env
-ANTHROPIC_API_KEY=sk-ant-xxxxx
-PORT=3000
+AI_PROVIDER=amazon-bedrock
+AI_MODEL=us.anthropic.claude-sonnet-4-20250514-v1:0
+AWS_ACCESS_KEY_ID=your-key
+AWS_SECRET_ACCESS_KEY=your-secret
+AWS_REGION=us-east-1
 ```
+
+#### 方式二：Anthropic 直连
+
+```env
+AI_PROVIDER=anthropic
+AI_MODEL=claude-sonnet-4-20250514
+ANTHROPIC_API_KEY=sk-ant-xxxxx
+```
+
+> 💡 如果设置了 `AWS_ACCESS_KEY_ID`，会自动使用 Bedrock，无需额外配置 `AI_PROVIDER`。
 
 ### 开发模式
 
