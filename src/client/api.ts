@@ -63,6 +63,14 @@ export const api = {
       body: JSON.stringify({ petId, message }),
     });
   },
+
+  getNotifications(userId: string) {
+    return request<Array<{ id: number; type: string; message: string; created_at: string }>>(`/api/notifications/${userId}`);
+  },
+
+  markNotificationsRead(userId: string) {
+    return request<{ ok: boolean }>(`/api/notifications/${userId}/read`, { method: "POST" });
+  },
 };
 
 // WebSocket helper

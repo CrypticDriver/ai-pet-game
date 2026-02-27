@@ -17,6 +17,7 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [notifications, setNotifications] = useState<Array<{ id: number; message: string }>>([]);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -48,6 +49,25 @@ export default function App() {
     }, 30000);
     return () => clearInterval(iv);
   }, [pet?.id]);
+
+  // Poll notifications every 60s
+  useEffect(() => {
+    if (!userId) return;
+    const check = () => {
+      api.getNotifications(userId).then((notifs) => {
+        if (notifs.length > 0) {
+          setNotifications(notifs);
+          // Show the first unread as toast
+          showToast(notifs[0].message);
+          // Mark as read
+          api.markNotificationsRead(userId);
+        }
+      }).catch(() => {});
+    };
+    check();
+    const iv = setInterval(check, 60000);
+    return () => clearInterval(iv);
+  }, [userId, showToast]);
 
   const handleInit = async (name: string, petName: string) => {
     const uid = `user-${Date.now()}`;

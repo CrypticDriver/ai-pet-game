@@ -17,6 +17,12 @@ import {
   decayStats,
 } from "./db.js";
 import { chat, refreshAgent } from "./pet-agent.js";
+import {
+  initNotifications,
+  generateNotifications,
+  getUnreadNotifications,
+  markNotificationsRead,
+} from "./notifications.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -120,6 +126,17 @@ app.post<{ Body: { petId: string; message: string } }>("/api/chat", async (req, 
   }
 });
 
+// ---- Notifications ----
+
+app.get<{ Params: { userId: string } }>("/api/notifications/:userId", async (req) => {
+  return getUnreadNotifications(req.params.userId);
+});
+
+app.post<{ Params: { userId: string } }>("/api/notifications/:userId/read", async (req) => {
+  markNotificationsRead(req.params.userId);
+  return { ok: true };
+});
+
 // ---- WebSocket for real-time chat ----
 
 app.register(async function (fastify) {
@@ -164,6 +181,23 @@ setInterval(() => {
     console.error("Stats decay error:", e);
   }
 }, 5 * 60 * 1000);
+
+// ---- Notification generation (every 15 minutes) ----
+
+initNotifications();
+
+setInterval(() => {
+  try {
+    generateNotifications();
+  } catch (e) {
+    console.error("Notification generation error:", e);
+  }
+}, 15 * 60 * 1000);
+
+// Run once on startup after a small delay
+setTimeout(() => {
+  try { generateNotifications(); } catch {}
+}, 5000);
 
 // ---- Start server ----
 
