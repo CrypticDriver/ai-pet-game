@@ -108,10 +108,16 @@ app.post<{ Body: { userId: string; itemId: string } }>("/api/shop/buy", async (r
 });
 
 // Chat (REST fallback)
-app.post<{ Body: { petId: string; message: string } }>("/api/chat", async (req) => {
+app.post<{ Body: { petId: string; message: string } }>("/api/chat", async (req, reply) => {
   const { petId, message } = req.body;
-  const response = await chat(petId, message);
-  return { response, pet: getPet(petId) };
+  try {
+    const response = await chat(petId, message);
+    return { response, pet: getPet(petId) };
+  } catch (err: any) {
+    console.error("Chat error:", err.message);
+    reply.code(500);
+    return { error: "Chat failed", detail: err.message, pet: getPet(petId) };
+  }
 });
 
 // ---- WebSocket for real-time chat ----
@@ -126,10 +132,19 @@ app.register(async function (fastify) {
           // Send typing indicator
           socket.send(JSON.stringify({ type: "typing", petId }));
 
-          const response = await chat(petId, message);
-          const pet = getPet(petId);
-
-          socket.send(JSON.stringify({ type: "message", petId, response, pet }));
+          try {
+            const response = await chat(petId, message);
+            const pet = getPet(petId);
+            socket.send(JSON.stringify({ type: "message", petId, response, pet }));
+          } catch (chatErr: any) {
+            console.error("WS chat error:", chatErr.message);
+            socket.send(JSON.stringify({
+              type: "message",
+              petId,
+              response: "（我有点迷糊了…再跟我说一次？）",
+              error: chatErr.message,
+            }));
+          }
         } else if (data.type === "ping") {
           socket.send(JSON.stringify({ type: "pong" }));
         }
