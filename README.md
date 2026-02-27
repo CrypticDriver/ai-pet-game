@@ -143,6 +143,22 @@ npm run build
 npm start
 ```
 
+### Docker 部署
+
+```bash
+# 配置环境变量
+cp .env.example .env
+# 编辑 .env 填入 AWS/Anthropic 凭证
+
+# 启动
+docker compose up -d
+
+# 查看日志
+docker compose logs -f
+```
+
+访问 `http://your-server:3000`
+
 ---
 
 ## 📁 项目结构
