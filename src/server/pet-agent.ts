@@ -33,7 +33,12 @@ export function getOrCreateAgent(petId: string): Agent {
   const pet = getPet(petId);
   if (!pet) throw new Error(`Pet not found: ${petId}`);
 
-  const model = getModel("anthropic", "claude-sonnet-4-20250514");
+  // Support Bedrock or direct Anthropic based on env
+  const provider = process.env.AI_PROVIDER || (process.env.AWS_ACCESS_KEY_ID ? "amazon-bedrock" : "anthropic");
+  const modelId = process.env.AI_MODEL || (provider === "amazon-bedrock"
+    ? "us.anthropic.claude-sonnet-4-20250514-v1:0"
+    : "claude-sonnet-4-20250514");
+  const model = getModel(provider as any, modelId);
 
   const systemPrompt = buildSystemPrompt(pet);
 
