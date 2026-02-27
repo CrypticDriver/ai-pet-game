@@ -1,0 +1,182 @@
+import { useState, useEffect, useCallback } from "react";
+import type { Pet, ShopItem, ChatMessage } from "../shared/types.js";
+import { api } from "./api.js";
+import { PetView } from "./components/PetView.js";
+import { ChatView } from "./components/ChatView.js";
+import { ShopView } from "./components/ShopView.js";
+import { WelcomeScreen } from "./components/WelcomeScreen.js";
+
+type Tab = "pet" | "chat" | "shop";
+
+export default function App() {
+  const [userId, setUserId] = useState<string | null>(() => localStorage.getItem("pet-userId"));
+  const [pet, setPet] = useState<Pet | null>(null);
+  const [tab, setTab] = useState<Tab>("pet");
+  const [shopItems, setShopItems] = useState<ShopItem[]>([]);
+  const [ownedItems, setOwnedItems] = useState<ShopItem[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [toast, setToast] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const showToast = useCallback((msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  }, []);
+
+  // Initialize pet on load
+  useEffect(() => {
+    if (!userId) return;
+    setLoading(true);
+    api.init(userId, userId)
+      .then(({ pet }) => {
+        setPet(pet);
+        return Promise.all([api.getShop(), api.getOwned(userId)]);
+      })
+      .then(([shop, owned]) => {
+        setShopItems(shop);
+        setOwnedItems(owned);
+      })
+      .catch((e) => showToast(`Error: ${e.message}`))
+      .finally(() => setLoading(false));
+  }, [userId, showToast]);
+
+  // Poll pet stats every 30s
+  useEffect(() => {
+    if (!pet) return;
+    const iv = setInterval(() => {
+      api.getPet(pet.id).then(setPet).catch(() => {});
+    }, 30000);
+    return () => clearInterval(iv);
+  }, [pet?.id]);
+
+  const handleInit = async (name: string, petName: string) => {
+    const uid = `user-${Date.now()}`;
+    localStorage.setItem("pet-userId", uid);
+    setUserId(uid);
+  };
+
+  const handleAction = async (action: "feed" | "play" | "rest") => {
+    if (!pet) return;
+    try {
+      const updated = await api[action](pet.id);
+      setPet(updated);
+      const labels = { feed: "🍖 已喂食！", play: "🎾 玩耍中！", rest: "💤 休息中..." };
+      showToast(labels[action]);
+    } catch (e: any) {
+      showToast(`Error: ${e.message}`);
+    }
+  };
+
+  const handleChat = async (message: string) => {
+    if (!pet) return;
+    setMessages((prev) => [...prev, { role: "user", content: message, timestamp: Date.now() }]);
+    try {
+      const { response, pet: updatedPet } = await api.chat(pet.id, message);
+      setPet(updatedPet);
+      setMessages((prev) => [...prev, { role: "assistant", content: response, timestamp: Date.now() }]);
+    } catch (e: any) {
+      setMessages((prev) => [...prev, { role: "assistant", content: "（连接出错了…再试试？）", timestamp: Date.now() }]);
+    }
+  };
+
+  const handleBuy = async (itemId: string) => {
+    if (!userId) return;
+    try {
+      const result = await api.buyItem(userId, itemId);
+      if (result.ok) {
+        showToast("🎉 购买成功！");
+        const owned = await api.getOwned(userId);
+        setOwnedItems(owned);
+      } else {
+        showToast(result.error || "购买失败");
+      }
+    } catch (e: any) {
+      showToast(`Error: ${e.message}`);
+    }
+  };
+
+  const handleEquipSkin = async (skinId: string) => {
+    if (!pet) return;
+    try {
+      const updated = await api.changeSkin(pet.id, skinId);
+      setPet(updated);
+      showToast("✨ 换装成功！");
+    } catch (e: any) {
+      showToast(`Error: ${e.message}`);
+    }
+  };
+
+  // Welcome screen
+  if (!userId) {
+    return (
+      <div className="app">
+        <WelcomeScreen onStart={handleInit} />
+      </div>
+    );
+  }
+
+  if (loading || !pet) {
+    return (
+      <div className="app">
+        <div className="loading">加载中<span className="dots"></span></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="app">
+      {/* Header */}
+      <header className="header">
+        <div>
+          <h1>AI Pet</h1>
+          <div className="pet-name">{pet.name}</div>
+        </div>
+        <div style={{ fontSize: "10px", color: "var(--text-dim)" }}>
+          Lv.{Math.floor(pet.affection / 10) + 1}
+        </div>
+      </header>
+
+      {/* Toast */}
+      {toast && <div className="toast">{toast}</div>}
+
+      {/* Main content */}
+      <div className="main">
+        {tab === "pet" && (
+          <PetView pet={pet} onAction={handleAction} />
+        )}
+        {tab === "chat" && (
+          <ChatView
+            messages={messages}
+            onSend={handleChat}
+            petName={pet.name}
+          />
+        )}
+        {tab === "shop" && (
+          <ShopView
+            items={shopItems}
+            owned={ownedItems}
+            currentSkin={pet.skin_id}
+            onBuy={handleBuy}
+            onEquip={handleEquipSkin}
+          />
+        )}
+      </div>
+
+      {/* Bottom Navigation */}
+      <nav className="nav">
+        <button className={tab === "pet" ? "active" : ""} onClick={() => setTab("pet")}>
+          <span className="icon">🐾</span>
+          宠物
+        </button>
+        <button className={tab === "chat" ? "active" : ""} onClick={() => setTab("chat")}>
+          <span className="icon">💬</span>
+          聊天
+        </button>
+        <button className={tab === "shop" ? "active" : ""} onClick={() => setTab("shop")}>
+          <span className="icon">🛍️</span>
+          商城
+        </button>
+      </nav>
+    </div>
+  );
+}
