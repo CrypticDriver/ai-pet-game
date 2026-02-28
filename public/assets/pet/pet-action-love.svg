@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="256" height="256">
+  <!-- Pet 动作: 心心眼/喜欢 - CSS动画版 -->
+  
+  <defs>
+    <radialGradient id="bodyGrad" cx="40%" cy="30%" r="60%">
+      <stop offset="0%" style="stop-color:#FFF5F0" />
+      <stop offset="50%" style="stop-color:#FFE4E1" />
+      <stop offset="100%" style="stop-color:#F5D5D0" />
+    </radialGradient>
+    <radialGradient id="earInnerGrad" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#FFC8C8" />
+      <stop offset="100%" style="stop-color:#FFB0B5" />
+    </radialGradient>
+    <radialGradient id="blushGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FFB6C1" />
+      <stop offset="100%" style="stop-color:#FFB6C1;stop-opacity:0" />
+    </radialGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#D4A4A0" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <style>
+    .heart-eyes {
+      animation: heartPulse 0.8s ease-in-out infinite;
+      transform-origin: center;
+    }
+    .floating-hearts {
+      animation: floatUp 2s ease-out infinite;
+    }
+    @keyframes heartPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-20px) scale(0.5); opacity: 0; }
+    }
+  </style>
+  
+  <!-- 投影 -->
+  <ellipse cx="32" cy="58" rx="20" ry="4" fill="#E8D0D0" opacity="0.5"/>
+  
+  <!-- 身体 -->
+  <ellipse cx="32" cy="36" rx="24" ry="22" fill="url(#bodyGrad)" filter="url(#softShadow)"/>
+  <ellipse cx="32" cy="48" rx="20" ry="8" fill="#F0C8C8" opacity="0.3"/>
+  <ellipse cx="26" cy="28" rx="12" ry="8" fill="#FFFFFF" opacity="0.4"/>
+  
+  <!-- 耳朵 -->
+  <ellipse cx="14" cy="18" rx="7" ry="10" fill="url(#bodyGrad)" transform="rotate(-12 14 18)"/>
+  <ellipse cx="14" cy="19" rx="4.5" ry="6" fill="url(#earInnerGrad)" transform="rotate(-12 14 18)"/>
+  <ellipse cx="50" cy="18" rx="7" ry="10" fill="url(#bodyGrad)" transform="rotate(12 50 18)"/>
+  <ellipse cx="50" cy="19" rx="4.5" ry="6" fill="url(#earInnerGrad)" transform="rotate(12 50 18)"/>
+  
+  <!-- 心心眼 -->
+  <g class="heart-eyes">
+    <!-- 左眼心 -->
+    <path d="M 24 30 
+             C 24 28, 22 26, 20 28
+             C 18 30, 20 34, 24 36
+             C 28 34, 30 30, 28 28
+             C 26 26, 24 28, 24 30" 
+          fill="#FF6B8A"/>
+    <ellipse cx="22" cy="29" rx="1.5" ry="1" fill="#FFFFFF" opacity="0.6"/>
+    
+    <!-- 右眼心 -->
+    <path d="M 40 30 
+             C 40 28, 38 26, 36 28
+             C 34 30, 36 34, 40 36
+             C 44 34, 46 30, 44 28
+             C 42 26, 40 28, 40 30" 
+          fill="#FF6B8A"/>
+    <ellipse cx="38" cy="29" rx="1.5" ry="1" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+  
+  <!-- 腮红 - 更红 -->
+  <ellipse cx="12" cy="38" rx="7" ry="5" fill="url(#blushGrad)"/>
+  <ellipse cx="52" cy="38" rx="7" ry="5" fill="url(#blushGrad)"/>
+  
+  <!-- 嘴巴 - 幸福微笑 -->
+  <path d="M 26 44 Q 32 49 38 44" stroke="#D88080" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- 脚 -->
+  <ellipse cx="22" cy="54" rx="6" ry="4" fill="url(#bodyGrad)"/>
+  <ellipse cx="42" cy="54" rx="6" ry="4" fill="url(#bodyGrad)"/>
+  
+  <!-- 蝴蝶结 -->
+  <g transform="translate(32, 12)">
+    <ellipse cx="-6" cy="0" rx="5" ry="3.5" fill="#98D8C8"/>
+    <ellipse cx="6" cy="0" rx="5" ry="3.5" fill="#98D8C8"/>
+    <circle cx="0" cy="0" r="2.5" fill="#7FC8B8"/>
+  </g>
+  
+  <!-- 漂浮的心心 -->
+  <g class="floating-hearts">
+    <path d="M 8 25 C 8 23, 6 21, 4 23 C 2 25, 4 29, 8 31 C 12 29, 14 25, 12 23 C 10 21, 8 23, 8 25" fill="#FFB6C1" opacity="0.8">
+      <animate attributeName="opacity" values="0.8;0" dur="2s" repeatCount="indefinite"/>
+    </path>
+  </g>
+  <g class="floating-hearts" style="animation-delay: 0.5s">
+    <path d="M 56 22 C 56 20, 54 18, 52 20 C 50 22, 52 26, 56 28 C 60 26, 62 22, 60 20 C 58 18, 56 20, 56 22" fill="#FFB6C1" opacity="0.6" transform="scale(0.8)">
+      <animate attributeName="opacity" values="0.6;0" dur="2s" repeatCount="indefinite" begin="0.5s"/>
+    </path>
+  </g>
+  <g class="floating-hearts" style="animation-delay: 1s">
+    <path d="M 52 35 C 52 33, 50 31, 48 33 C 46 35, 48 39, 52 41 C 56 39, 58 35, 56 33 C 54 31, 52 33, 52 35" fill="#FFB6C1" opacity="0.5" transform="scale(0.6)">
+      <animate attributeName="opacity" values="0.5;0" dur="2s" repeatCount="indefinite" begin="1s"/>
+    </path>
+  </g>
+</svg>

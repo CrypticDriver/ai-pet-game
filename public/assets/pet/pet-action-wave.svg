@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="256" height="256">
+  <!-- Pet 动作: 招手/挥手 - CSS动画版 -->
+  
+  <defs>
+    <radialGradient id="bodyGrad" cx="40%" cy="30%" r="60%">
+      <stop offset="0%" style="stop-color:#FFF5F0" />
+      <stop offset="50%" style="stop-color:#FFE4E1" />
+      <stop offset="100%" style="stop-color:#F5D5D0" />
+    </radialGradient>
+    <radialGradient id="earInnerGrad" cx="50%" cy="30%" r="70%">
+      <stop offset="0%" style="stop-color:#FFC8C8" />
+      <stop offset="100%" style="stop-color:#FFB0B5" />
+    </radialGradient>
+    <radialGradient id="blushGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FFB6C1" />
+      <stop offset="100%" style="stop-color:#FFB6C1;stop-opacity:0" />
+    </radialGradient>
+    <radialGradient id="eyeGrad" cx="40%" cy="30%" r="60%">
+      <stop offset="0%" style="stop-color:#5A4A4A" />
+      <stop offset="100%" style="stop-color:#3A2A2A" />
+    </radialGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#D4A4A0" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <style>
+    .wave-arm {
+      animation: wave 0.5s ease-in-out infinite;
+      transform-origin: 48px 40px;
+    }
+    @keyframes wave {
+      0%, 100% { transform: rotate(-10deg); }
+      50% { transform: rotate(20deg); }
+    }
+  </style>
+  
+  <!-- 投影 -->
+  <ellipse cx="32" cy="58" rx="20" ry="4" fill="#E8D0D0" opacity="0.5"/>
+  
+  <!-- 身体 -->
+  <ellipse cx="32" cy="36" rx="24" ry="22" fill="url(#bodyGrad)" filter="url(#softShadow)"/>
+  <ellipse cx="32" cy="48" rx="20" ry="8" fill="#F0C8C8" opacity="0.3"/>
+  <ellipse cx="26" cy="28" rx="12" ry="8" fill="#FFFFFF" opacity="0.4"/>
+  
+  <!-- 耳朵 -->
+  <ellipse cx="14" cy="18" rx="7" ry="10" fill="url(#bodyGrad)" transform="rotate(-12 14 18)"/>
+  <ellipse cx="14" cy="19" rx="4.5" ry="6" fill="url(#earInnerGrad)" transform="rotate(-12 14 18)"/>
+  <ellipse cx="50" cy="18" rx="7" ry="10" fill="url(#bodyGrad)" transform="rotate(12 50 18)"/>
+  <ellipse cx="50" cy="19" rx="4.5" ry="6" fill="url(#earInnerGrad)" transform="rotate(12 50 18)"/>
+  
+  <!-- 眼睛 - 开心 -->
+  <ellipse cx="24" cy="32" rx="5" ry="6" fill="url(#eyeGrad)"/>
+  <circle cx="26" cy="30" r="2" fill="white"/>
+  <ellipse cx="40" cy="32" rx="5" ry="6" fill="url(#eyeGrad)"/>
+  <circle cx="42" cy="30" r="2" fill="white"/>
+  
+  <!-- 腮红 -->
+  <ellipse cx="12" cy="38" rx="6" ry="4" fill="url(#blushGrad)"/>
+  <ellipse cx="52" cy="38" rx="6" ry="4" fill="url(#blushGrad)"/>
+  
+  <!-- 嘴巴 - 开心 -->
+  <path d="M 26 43 Q 32 48 38 43" stroke="#D88080" stroke-width="2" fill="none" stroke-linecap="round"/>
+  
+  <!-- 左脚 -->
+  <ellipse cx="22" cy="54" rx="6" ry="4" fill="url(#bodyGrad)"/>
+  <!-- 右脚 -->
+  <ellipse cx="42" cy="54" rx="6" ry="4" fill="url(#bodyGrad)"/>
+  
+  <!-- 挥手的手臂 -->
+  <g class="wave-arm">
+    <!-- 手臂 -->
+    <ellipse cx="54" cy="32" rx="5" ry="7" fill="url(#bodyGrad)" filter="url(#softShadow)"/>
+    <!-- 手掌 -->
+    <ellipse cx="56" cy="26" rx="4" ry="5" fill="url(#bodyGrad)"/>
+    <ellipse cx="55" cy="25" rx="2" ry="2.5" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+  
+  <!-- 蝴蝶结 -->
+  <g transform="translate(32, 12)">
+    <ellipse cx="-6" cy="0" rx="5" ry="3.5" fill="#98D8C8"/>
+    <ellipse cx="6" cy="0" rx="5" ry="3.5" fill="#98D8C8"/>
+    <circle cx="0" cy="0" r="2.5" fill="#7FC8B8"/>
+  </g>
+  
+  <!-- 招手效果线 -->
+  <g opacity="0.5">
+    <path d="M 58 22 Q 62 20 60 16" stroke="#FFB6C1" stroke-width="1.5" fill="none">
+      <animate attributeName="opacity" values="0;1;0" dur="0.5s" repeatCount="indefinite"/>
+    </path>
+    <path d="M 60 24 Q 64 22 62 18" stroke="#FFB6C1" stroke-width="1" fill="none">
+      <animate attributeName="opacity" values="0;1;0" dur="0.5s" repeatCount="indefinite" begin="0.15s"/>
+    </path>
+  </g>
+</svg>

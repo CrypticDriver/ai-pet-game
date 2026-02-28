@@ -102,13 +102,14 @@
 }
 
 .pet-stage {
-  width: 200px;
-  height: 200px;
+  width: 220px;
+  height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
+  cursor: pointer;
 }
 
 .pixel-pet {
@@ -201,6 +202,35 @@
 .stat-fill.affection { background: linear-gradient(90deg, var(--purple), var(--accent-soft)); }
 
 /* ====== Action Buttons ====== */
+.pet-actions-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.pet-action-mini {
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pet-action-mini:hover {
+  border-color: var(--accent);
+  transform: scale(1.15);
+}
+
+.pet-action-mini:active {
+  transform: scale(0.95);
+}
+
 .actions {
   display: flex;
   gap: 10px;
