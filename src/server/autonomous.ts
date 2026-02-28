@@ -8,6 +8,7 @@
 
 import { getDb, getPet, updatePetStats } from "./db.js";
 import { chat } from "./pet-agent.js";
+import { isFirstMeeting, recordFirstMeeting, createConversationMemory, recordFriendship, buildSocialContext } from "./memory.js";
 
 // ── DB Schema ──
 
@@ -341,6 +342,16 @@ async function triggerAutonomousSocial() {
 
   console.log(`💬 Autonomous social: ${petA.name} → ${petB.name}: "${topic}"`);
 
+  // Check first meeting and record it
+  if (isFirstMeeting(petA.pet_id, petB.pet_id)) {
+    recordFirstMeeting(petA.pet_id, petB.pet_id, petB.name);
+    recordFirstMeeting(petB.pet_id, petA.pet_id, petA.name);
+  }
+
+  // Build social context (memories about each other)
+  const socialCtxA = buildSocialContext(petA.pet_id, petB.pet_id, petB.name);
+  const socialCtxB = buildSocialContext(petB.pet_id, petA.pet_id, petA.name);
+
   // Turn 1: Pet A initiates
   db.prepare(`
     INSERT INTO pet_activity_log (pet_id, action_type, action_data, location)
@@ -352,14 +363,16 @@ async function triggerAutonomousSocial() {
     message: topic,
   }));
 
-  // Memory-grounded conversations: each pet's system prompt already includes
-  // their full memory context (recent activities, friends, compressed history).
-  // The AI responds based on real memories, not hallucinations.
+  // Conversation messages for memory creation
+  const conversationLog: Array<{ speaker: string; text: string }> = [
+    { speaker: petA.name, text: topic },
+  ];
 
-  // Turn 2: Pet B replies via AI
+  // Turn 2: Pet B replies via AI (with social memory)
   try {
-    const replyResult = await chat(petB.pet_id, `[在广场上，${petA.name}走过来对你说]: ${topic}`);
+    const replyResult = await chat(petB.pet_id, `[在广场上，${petA.name}走过来对你说]: ${topic}${socialCtxB}`);
     const reply = replyResult.text || "嗯嗯！😊";
+    conversationLog.push({ speaker: petB.name, text: reply });
 
     db.prepare(`
       INSERT INTO pet_activity_log (pet_id, action_type, action_data, location)
@@ -371,9 +384,10 @@ async function triggerAutonomousSocial() {
       message: reply,
     }));
 
-    // Turn 3: Pet A reacts via AI
-    const reactResult = await chat(petA.pet_id, `[在广场上，${petB.name}回复你说]: ${reply}`);
+    // Turn 3: Pet A reacts via AI (with social memory)
+    const reactResult = await chat(petA.pet_id, `[在广场上，${petB.name}回复你说]: ${reply}${socialCtxA}`);
     const reaction = reactResult.text || "哈哈～ 😄";
+    conversationLog.push({ speaker: petA.name, text: reaction });
 
     db.prepare(`
       INSERT INTO pet_activity_log (pet_id, action_type, action_data, location)
@@ -389,12 +403,18 @@ async function triggerAutonomousSocial() {
     updatePetStats(petA.pet_id, { mood: Math.min(100, petA.mood + 5) });
     updatePetStats(petB.pet_id, { mood: Math.min(100, petB.mood + 5) });
 
+    // Create memories of this conversation for both pets
+    createConversationMemory(petA.pet_id, petB.pet_id, petB.name, conversationLog).catch(() => {});
+    createConversationMemory(petB.pet_id, petA.pet_id, petA.name, conversationLog).catch(() => {});
+
     // Maybe become friends if not already
     if (Math.random() < 0.2) {
       const existing = db.prepare("SELECT 1 FROM friends WHERE pet_id = ? AND friend_pet_id = ?").get(petA.pet_id, petB.pet_id);
       if (!existing) {
         db.prepare("INSERT OR IGNORE INTO friends (pet_id, friend_pet_id) VALUES (?, ?)").run(petA.pet_id, petB.pet_id);
         db.prepare("INSERT OR IGNORE INTO friends (pet_id, friend_pet_id) VALUES (?, ?)").run(petB.pet_id, petA.pet_id);
+        recordFriendship(petA.pet_id, petB.pet_id, petB.name);
+        recordFriendship(petB.pet_id, petA.pet_id, petA.name);
         db.prepare(`
           INSERT INTO pet_activity_log (pet_id, action_type, action_data, location)
           VALUES (?, 'became_friends', ?, 'plaza')

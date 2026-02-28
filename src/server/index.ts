@@ -43,7 +43,7 @@ import {
   setPetLocation,
 } from "./autonomous.js";
 import { getWorldviewInfo } from "./worldview.js";
-import { compressAllMemories } from "./memory.js";
+import { compressAllMemories, initMemorySchema } from "./memory.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -191,6 +191,7 @@ app.get("/api/worldview", async () => {
 
 initPlazaSchema();
 initAutonomousSchema();
+initMemorySchema();
 
 // Get online pets in plaza
 app.get("/api/plaza/pets", async () => {

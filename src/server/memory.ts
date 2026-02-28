@@ -1,17 +1,38 @@
 /**
  * Pet Memory System
  * 
- * Each pet accumulates memories from activities, conversations, and social interactions.
- * Memories are periodically compressed into a summary stored in the DB.
- * This summary is injected into the AI system prompt so pets "remember" their life.
+ * Two layers of memory:
+ * 1. General memory: daily activity summaries (what I did today)
+ * 2. Social memory: per-pet relationship memories (what I know about each friend)
  * 
  * Key principle (boss directive): 
  * - Pets can have "善意谎言" (white lies / gentle expressions)
  * - Pets CANNOT have "幻觉" (hallucinations / fabricated events)
  * - Memory grounds the AI in real experiences
+ * - Memories should be emotional and contextual, not mechanical logs
  */
 
 import { getDb, getPet, updatePetMemory } from "./db.js";
+import { chat } from "./pet-agent.js";
+
+// ── DB Schema ──
+
+export function initMemorySchema() {
+  const db = getDb();
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS pet_social_memory (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pet_id TEXT NOT NULL,
+      target_pet_id TEXT NOT NULL,
+      memory_type TEXT NOT NULL CHECK(memory_type IN ('first_meet', 'conversation', 'shared_activity', 'impression', 'friendship')),
+      memory_text TEXT NOT NULL,
+      emotional_tag TEXT DEFAULT 'neutral',
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_social_memory_pet ON pet_social_memory(pet_id, target_pet_id);
+  `);
+}
 
 /**
  * Build a memory context string for a pet's system prompt.
@@ -81,6 +102,128 @@ export function buildMemoryContext(petId: string): string {
   parts.push(`## 重要规则\n你只能谈论真实发生过的事。上面列出了你的真实记忆和经历。你可以表达感受、聊日常、问问题，但不要编造没有发生过的具体活动或事件。`);
 
   return parts.join("\n\n");
+}
+
+// ── Social Memory (per-pet relationship) ──
+
+/**
+ * Get all memories about a specific pet.
+ * Used when two pets are about to interact.
+ */
+export function getMemoriesAbout(petId: string, targetPetId: string): string {
+  const db = getDb();
+  const memories = db.prepare(`
+    SELECT memory_type, memory_text, emotional_tag, created_at
+    FROM pet_social_memory
+    WHERE pet_id = ? AND target_pet_id = ?
+    ORDER BY id ASC
+  `).all(petId, targetPetId) as any[];
+
+  if (memories.length === 0) return "";
+
+  const lines = memories.map(m => `- ${m.memory_text}`);
+  return lines.join("\n");
+}
+
+/**
+ * Check if this is the first time two pets meet.
+ */
+export function isFirstMeeting(petId: string, targetPetId: string): boolean {
+  const db = getDb();
+  const existing = db.prepare(`
+    SELECT 1 FROM pet_social_memory
+    WHERE pet_id = ? AND target_pet_id = ? AND memory_type = 'first_meet'
+    LIMIT 1
+  `).get(petId, targetPetId);
+  return !existing;
+}
+
+/**
+ * Record a first meeting between two pets.
+ */
+export function recordFirstMeeting(petId: string, targetPetId: string, targetName: string) {
+  const db = getDb();
+  const hour = new Date().getUTCHours();
+  const timeOfDay = hour < 12 ? "上午" : hour < 18 ? "下午" : "晚上";
+
+  db.prepare(`
+    INSERT INTO pet_social_memory (pet_id, target_pet_id, memory_type, memory_text, emotional_tag)
+    VALUES (?, ?, 'first_meet', ?, 'warm')
+  `).run(petId, targetPetId, `第一次在Hub认识了${targetName}，是${timeOfDay}的时候`);
+}
+
+/**
+ * After a conversation, generate a memory summary using AI.
+ * This creates an emotional, contextual memory — not a mechanical log.
+ */
+export async function createConversationMemory(
+  petId: string,
+  targetPetId: string,
+  targetName: string,
+  messages: Array<{ speaker: string; text: string }>
+) {
+  const db = getDb();
+
+  // Build conversation text for summarization
+  const convoText = messages.map(m => `${m.speaker}: ${m.text}`).join("\n");
+
+  // Use the pet's own AI to generate a memory (from its perspective)
+  try {
+    const result = await chat(petId,
+      `[系统：请用一句话总结你刚才和${targetName}的对话，写下你想记住的东西。` +
+      `比如对方说了什么有趣的话、你们聊了什么话题、你对它的感觉。` +
+      `只写一句简短的记忆，不要打招呼。]\n\n刚才的对话：\n${convoText}`
+    );
+
+    const memoryText = result.text?.replace(/^[\s"']*|[\s"']*$/g, "").slice(0, 200);
+    if (memoryText && memoryText.length > 5) {
+      // Detect emotional tag from content
+      let emotionalTag = "neutral";
+      if (/开心|快乐|好玩|有趣|哈哈/.test(memoryText)) emotionalTag = "happy";
+      else if (/温暖|温柔|感动|谢谢/.test(memoryText)) emotionalTag = "warm";
+      else if (/好奇|有意思|想知道/.test(memoryText)) emotionalTag = "curious";
+      else if (/难过|担心|想念/.test(memoryText)) emotionalTag = "sad";
+
+      db.prepare(`
+        INSERT INTO pet_social_memory (pet_id, target_pet_id, memory_type, memory_text, emotional_tag)
+        VALUES (?, ?, 'conversation', ?, ?)
+      `).run(petId, targetPetId, memoryText, emotionalTag);
+
+      console.log(`🧠 Memory created for ${petId} about ${targetName}: "${memoryText.slice(0, 50)}..."`);
+    }
+  } catch (err: any) {
+    console.error(`Memory creation error: ${err.message}`);
+  }
+}
+
+/**
+ * Record a friendship event.
+ */
+export function recordFriendship(petId: string, targetPetId: string, targetName: string) {
+  const db = getDb();
+  db.prepare(`
+    INSERT INTO pet_social_memory (pet_id, target_pet_id, memory_type, memory_text, emotional_tag)
+    VALUES (?, ?, 'friendship', ?, 'happy')
+  `).run(petId, targetPetId, `和${targetName}成为了好朋友！觉得特别开心`);
+}
+
+/**
+ * Build a social context string for a specific interaction.
+ * Injected when Pet A is about to talk with Pet B.
+ */
+export function buildSocialContext(petId: string, targetPetId: string, targetName: string): string {
+  const memories = getMemoriesAbout(petId, targetPetId);
+  const isFirst = isFirstMeeting(petId, targetPetId);
+
+  if (isFirst) {
+    return `\n\n[你从来没见过${targetName}，这是你们第一次相遇。好奇地去认识它吧！]`;
+  }
+
+  if (!memories) {
+    return `\n\n[你之前见过${targetName}，但记忆模糊。]`;
+  }
+
+  return `\n\n[你对${targetName}的记忆：\n${memories}\n\n基于这些记忆继续你们的对话。]`;
 }
 
 /**
