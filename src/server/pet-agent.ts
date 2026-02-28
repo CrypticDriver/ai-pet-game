@@ -60,7 +60,7 @@ export function getOrCreateAgent(petId: string): Agent {
       ? "amazon-bedrock" : "anthropic"
   );
   const modelId = process.env.AI_MODEL || (provider === "amazon-bedrock"
-    ? "us.anthropic.claude-sonnet-4-20250514-v1:0"
+    ? "us.amazon.nova-pro-v1:0"
     : "claude-sonnet-4-20250514");
 
   // For Bedrock models, try the exact ID first, then strip prefix to find base model config
@@ -209,6 +209,8 @@ export async function chat(petId: string, userMessage: string): Promise<{ text: 
       }
       if (event.type === "agent_end") {
         unsub();
+        // Strip leaked <thinking> tags from Nova models
+        fullResponse = fullResponse.replace(/<thinking>[\s\S]*?<\/thinking>\s*/g, "").trim();
         // Save assistant response
         if (fullResponse) {
           addInteraction(petId, "assistant", fullResponse);
