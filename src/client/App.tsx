@@ -5,10 +5,11 @@ import { PetView } from "./components/PetView.js";
 import { ChatView } from "./components/ChatView.js";
 import { ShopView } from "./components/ShopView.js";
 import { WelcomeScreen } from "./components/WelcomeScreen.js";
+import { PlazaView } from "./components/PlazaView.js";
 import { detectEmotionFromText, parseServerAnimations } from "./engine/emotionDetector.js";
 import type { PetAnimState } from "./engine/petRenderer.js";
 
-type Tab = "pet" | "chat" | "shop";
+type Tab = "pet" | "chat" | "shop" | "plaza";
 
 export default function App() {
   const [userId, setUserId] = useState<string | null>(() => localStorage.getItem("pet-userId"));
@@ -206,6 +207,9 @@ export default function App() {
             onEquip={handleEquipSkin}
           />
         )}
+        {tab === "plaza" && (
+          <PlazaView petId={pet.id} petName={pet.name} onShowToast={showToast} />
+        )}
       </div>
 
       {/* Bottom Navigation */}
@@ -221,6 +225,10 @@ export default function App() {
         <button className={tab === "shop" ? "active" : ""} onClick={() => setTab("shop")}>
           <span className="icon">🛍️</span>
           商城
+        </button>
+        <button className={tab === "plaza" ? "active" : ""} onClick={() => setTab("plaza")}>
+          <span className="icon">🏞️</span>
+          广场
         </button>
       </nav>
     </div>

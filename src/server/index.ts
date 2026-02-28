@@ -27,6 +27,14 @@ import {
   getUnreadNotifications,
   markNotificationsRead,
 } from "./notifications.js";
+import {
+  initPlazaSchema,
+  getPlazaPets,
+  getFriends,
+  addFriend,
+  removeFriend,
+  handlePlazaSocket,
+} from "./plaza.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -165,6 +173,37 @@ app.post<{ Params: { userId: string } }>("/api/notifications/:userId/read", asyn
   return { ok: true };
 });
 
+// ---- Plaza (Social Area) ----
+
+initPlazaSchema();
+
+// Get online pets in plaza
+app.get("/api/plaza/pets", async () => {
+  return getPlazaPets();
+});
+
+// Get friends list
+app.get<{ Params: { petId: string } }>("/api/plaza/:petId/friends", async (req) => {
+  return getFriends(req.params.petId);
+});
+
+// Add friend
+app.post<{ Params: { petId: string }; Body: { friendPetId: string } }>(
+  "/api/plaza/:petId/friend",
+  async (req) => {
+    return addFriend(req.params.petId, req.body.friendPetId);
+  }
+);
+
+// Remove friend
+app.post<{ Params: { petId: string }; Body: { friendPetId: string } }>(
+  "/api/plaza/:petId/unfriend",
+  async (req) => {
+    removeFriend(req.params.petId, req.body.friendPetId);
+    return { ok: true };
+  }
+);
+
 // ---- WebSocket for real-time chat ----
 
 app.register(async function (fastify) {
@@ -197,6 +236,10 @@ app.register(async function (fastify) {
         socket.send(JSON.stringify({ type: "error", error: err.message }));
       }
     });
+  });
+  // Plaza WebSocket
+  fastify.get("/ws/plaza", { websocket: true }, (socket, req) => {
+    handlePlazaSocket(socket);
   });
 });
 
