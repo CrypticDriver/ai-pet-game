@@ -320,11 +320,11 @@ async function triggerAutonomousSocial() {
 
   if (plazaPets.length < 2) return; // Need at least 2 pets
 
-  // Check if a conversation happened recently (throttle: 1 conversation per ~2 minutes)
+  // Check if a conversation happened recently (throttle: 1 per 42s tick cycle)
   const recentChat = db.prepare(`
     SELECT 1 FROM pet_activity_log
     WHERE action_type IN ('social_chat_init', 'social_chat_reply', 'social_chat_react')
-    AND created_at > datetime('now', '-2 minutes')
+    AND created_at > datetime('now', '-42 seconds')
     LIMIT 1
   `).get();
 
