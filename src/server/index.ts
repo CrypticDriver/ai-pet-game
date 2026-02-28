@@ -35,6 +35,13 @@ import {
   removeFriend,
   handlePlazaSocket,
 } from "./plaza.js";
+import {
+  initAutonomousSchema,
+  executeAutonomousBehavior,
+  getPetActivityLog,
+  getPetState,
+  setPetLocation,
+} from "./autonomous.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -176,6 +183,7 @@ app.post<{ Params: { userId: string } }>("/api/notifications/:userId/read", asyn
 // ---- Plaza (Social Area) ----
 
 initPlazaSchema();
+initAutonomousSchema();
 
 // Get online pets in plaza
 app.get("/api/plaza/pets", async () => {
@@ -200,6 +208,31 @@ app.post<{ Params: { petId: string }; Body: { friendPetId: string } }>(
   "/api/plaza/:petId/unfriend",
   async (req) => {
     removeFriend(req.params.petId, req.body.friendPetId);
+    return { ok: true };
+  }
+);
+
+// ---- Pet Autonomous Behavior ----
+
+// Get activity log (what pet did while you were away)
+app.get<{ Params: { petId: string }; Querystring: { limit?: string } }>(
+  "/api/pet/:petId/activity",
+  async (req) => {
+    const limit = parseInt(req.query.limit || "20");
+    return getPetActivityLog(req.params.petId, limit);
+  }
+);
+
+// Get pet autonomous state (location, position, current action)
+app.get<{ Params: { petId: string } }>("/api/pet/:petId/state", async (req) => {
+  return getPetState(req.params.petId) || { location: "room", position_x: 160, position_y: 180, current_action: "idle" };
+});
+
+// Set pet location (room/plaza)
+app.post<{ Params: { petId: string }; Body: { location: "room" | "plaza" } }>(
+  "/api/pet/:petId/location",
+  async (req) => {
+    setPetLocation(req.params.petId, req.body.location);
     return { ok: true };
   }
 );
@@ -252,6 +285,21 @@ setInterval(() => {
     console.error("Stats decay error:", e);
   }
 }, 5 * 60 * 1000);
+
+// ---- Autonomous behavior (every 60 seconds) ----
+
+setInterval(() => {
+  try {
+    executeAutonomousBehavior();
+  } catch (e) {
+    console.error("Autonomous behavior error:", e);
+  }
+}, 60 * 1000);
+
+// Run once on startup
+setTimeout(() => {
+  try { executeAutonomousBehavior(); } catch {}
+}, 2000);
 
 // ---- Notification generation (every 15 minutes) ----
 

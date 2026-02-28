@@ -3,6 +3,7 @@ import { SKIN_THEMES, EXPRESSION_SVG_PATH, getExpressionFromStats, SKIN_TO_PIXEL
 import { useState, useCallback, useEffect } from "react";
 import { api } from "../api.js";
 import { PetCanvas } from "./PetCanvas.js";
+import { ActivityFeed } from "./ActivityFeed.js";
 import type { PetAnimState } from "../engine/petRenderer.js";
 
 interface Props {
@@ -223,6 +224,9 @@ export function PetView({ pet, onAction, aiAnim, aiExpr }: Props) {
           {cooldown.rest && <span className="action-cooldown">冷却中</span>}
         </button>
       </div>
+
+      {/* Activity Feed — what pet did while you were away */}
+      <ActivityFeed petId={pet.id} />
     </div>
   );
 }

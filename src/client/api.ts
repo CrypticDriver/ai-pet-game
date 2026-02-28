@@ -93,6 +93,24 @@ export const api = {
   markNotificationsRead(userId: string) {
     return request<{ ok: boolean }>(`/api/notifications/${userId}/read`, { method: "POST" });
   },
+
+  // Activity log (autonomous behavior history)
+  getActivity(petId: string, limit = 20) {
+    return request<any[]>(`/api/pet/${petId}/activity?limit=${limit}`);
+  },
+
+  // Pet autonomous state
+  getPetState(petId: string) {
+    return request<{ location: string; position_x: number; position_y: number; current_action: string }>(`/api/pet/${petId}/state`);
+  },
+
+  // Set pet location (room/plaza)
+  setPetLocation(petId: string, location: "room" | "plaza") {
+    return request<{ ok: boolean }>(`/api/pet/${petId}/location`, {
+      method: "POST",
+      body: JSON.stringify({ location }),
+    });
+  },
 };
 
 // WebSocket helper
