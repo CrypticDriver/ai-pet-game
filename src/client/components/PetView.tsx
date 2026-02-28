@@ -2,6 +2,8 @@ import type { Pet, PetExpression, EquippedAccessory } from "../../shared/types.j
 import { SKIN_THEMES, EXPRESSION_SVG_PATH, getExpressionFromStats, SKIN_TO_PIXEL_HEAD, SLOT_LAYER_ORDER } from "../../shared/types.js";
 import { useState, useCallback, useEffect } from "react";
 import { api } from "../api.js";
+import { PetCanvas } from "./PetCanvas.js";
+import type { PetAnimState } from "../engine/petRenderer.js";
 
 interface Props {
   pet: Pet;
@@ -11,13 +13,14 @@ interface Props {
 // Pet body action animations
 type BodyAction = "idle" | "bounce" | "headshake" | "wave" | "spin" | "love";
 
-const BODY_ACTION_SVG: Record<BodyAction, string> = {
-  idle: "/assets/pet/pet-refined-idle.svg",
-  bounce: "/assets/pet/pet-action-bounce.svg",
-  headshake: "/assets/pet/pet-action-headshake.svg",
-  wave: "/assets/pet/pet-action-wave.svg",
-  spin: "/assets/pet/pet-action-spin.svg",
-  love: "/assets/pet/pet-action-love.svg",
+// Map BodyAction to PetAnimState for Canvas renderer
+const BODY_TO_CANVAS: Record<BodyAction, PetAnimState> = {
+  idle: "idle",
+  bounce: "bounce",
+  headshake: "wave",
+  wave: "wave",
+  spin: "spin",
+  love: "love",
 };
 
 // Map nurture actions to body animations + expression reactions
@@ -85,39 +88,32 @@ export function PetView({ pet, onAction }: Props) {
     return "🙂";
   };
 
+  // Skin hue shifts for Canvas renderer
+  const SKIN_HUE: Record<string, number> = {
+    "skin-default": 0,
+    "skin-ocean": 200,
+    "skin-forest": 120,
+    "skin-sunset": 30,
+    "skin-galaxy": 270,
+  };
+
   const fullness = 100 - pet.hunger;
 
   return (
     <div className="pet-view">
-      {/* Pet Stage: body + pixel head overlay */}
+      {/* Pet Stage: Canvas renderer */}
       <div
         className="pet-stage"
         style={{ background: `radial-gradient(circle, ${theme.bg}, transparent)` }}
-        onClick={() => { triggerBody("wave", 2000); triggerExpr("wink", 2000); }}
       >
-        {/* Full-body SVG */}
-        <div className="pet-body">
-          <object
-            type="image/svg+xml"
-            data={BODY_ACTION_SVG[bodyAction]}
-            width="180"
-            height="180"
-            style={{ pointerEvents: "none" }}
-          >
-            🐾
-          </object>
-        </div>
-
-        {/* Pixel head overlay */}
-        <div className="pet-head-overlay">
-          <img
-            src={EXPRESSION_SVG_PATH(currentExpr)}
-            alt={currentExpr}
-            width="80"
-            height="80"
-            style={{ imageRendering: "pixelated" }}
-          />
-        </div>
+        <PetCanvas
+          expression={currentExpr}
+          animState={BODY_TO_CANVAS[bodyAction]}
+          hueShift={SKIN_HUE[pet.skin_id] || 0}
+          width={220}
+          height={220}
+          onTap={() => { triggerBody("wave", 2000); triggerExpr("wink", 2000); }}
+        />
 
         {/* Accessory overlays */}
         {accessories
