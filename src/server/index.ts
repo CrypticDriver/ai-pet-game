@@ -42,6 +42,7 @@ import {
   getPetState,
   setPetLocation,
 } from "./autonomous.js";
+import { getWorldviewInfo } from "./worldview.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -181,6 +182,11 @@ app.post<{ Params: { userId: string } }>("/api/notifications/:userId/read", asyn
 });
 
 // ---- Plaza (Social Area) ----
+
+// Worldview API (public lore info)
+app.get("/api/worldview", async () => {
+  return getWorldviewInfo();
+});
 
 initPlazaSchema();
 initAutonomousSchema();

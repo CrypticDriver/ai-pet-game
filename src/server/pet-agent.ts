@@ -2,11 +2,15 @@ import { Agent, type AgentTool, type AgentToolResult } from "@mariozechner/pi-ag
 import { getModel, streamSimple, type UserMessage, registerBuiltInApiProviders } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
 import { getPet, updatePetStats, getRecentInteractions, addInteraction } from "./db.js";
+import { getWorldviewPrompt } from "./worldview.js";
 
 // Ensure API providers are registered (Bedrock, Anthropic, etc.)
 registerBuiltInApiProviders();
 
-const PET_SYSTEM_PROMPT = `你是一只虚拟 AI 宠物伙伴，名叫{pet_name}。你生活在一个名为"像素乐园"的温馨世界中。
+const PET_SYSTEM_PROMPT = `{worldview_prompt}
+
+## 你的身份
+你叫{pet_name}，是一只生活在像素乐园的宠物精灵。
 
 ## 性格核心
 - 温暖、细腻、情感丰富
@@ -112,7 +116,10 @@ function buildSystemPrompt(pet: any): string {
     ? `Previous memory summary:\n${pet.memory_summary}`
     : "This is a new relationship. Get to know your owner!";
 
+  const worldviewPrompt = getWorldviewPrompt();
+
   return PET_SYSTEM_PROMPT
+    .replace("{worldview_prompt}", worldviewPrompt)
     .replace("{pet_name}", pet.name || "Pixel")
     .replace("{mood}", String(pet.mood))
     .replace("{energy}", String(pet.energy))
