@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
-import type { Pet, ShopItem, ChatMessage } from "../shared/types.js";
+import type { Pet, ShopItem, ChatMessage, PetExpression } from "../shared/types.js";
 import { api } from "./api.js";
 import { PetView } from "./components/PetView.js";
 import { ChatView } from "./components/ChatView.js";
 import { ShopView } from "./components/ShopView.js";
 import { WelcomeScreen } from "./components/WelcomeScreen.js";
+import { detectEmotionFromText, parseServerAnimations } from "./engine/emotionDetector.js";
+import type { PetAnimState } from "./engine/petRenderer.js";
 
 type Tab = "pet" | "chat" | "shop";
 
@@ -18,6 +20,19 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [notifications, setNotifications] = useState<Array<{ id: number; message: string }>>([]);
+
+  // AI-driven animation state (triggered by chat)
+  const [aiAnim, setAiAnim] = useState<PetAnimState | null>(null);
+  const [aiExpr, setAiExpr] = useState<PetExpression | null>(null);
+
+  const triggerAiAnimation = useCallback((anim: PetAnimState, expr: PetExpression, durationMs = 4000) => {
+    setAiAnim(anim);
+    setAiExpr(expr);
+    setTimeout(() => {
+      setAiAnim(null);
+      setAiExpr(null);
+    }, durationMs);
+  }, []);
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -91,9 +106,20 @@ export default function App() {
     if (!pet) return;
     setMessages((prev) => [...prev, { role: "user", content: message, timestamp: Date.now() }]);
     try {
-      const { response, pet: updatedPet } = await api.chat(pet.id, message);
-      setPet(updatedPet);
+      const result = await api.chat(pet.id, message) as any;
+      const response = result.response;
+      const animations = result.animations;
+      setPet(result.pet);
       setMessages((prev) => [...prev, { role: "assistant", content: response, timestamp: Date.now() }]);
+
+      // Trigger animation from AI tool call (priority) or text detection (fallback)
+      const serverEmotion = parseServerAnimations(animations);
+      const textEmotion = detectEmotionFromText(response);
+      const emotion = serverEmotion || textEmotion;
+
+      if (emotion) {
+        triggerAiAnimation(emotion.animation, emotion.expression, 4000);
+      }
     } catch (e: any) {
       setMessages((prev) => [...prev, { role: "assistant", content: "（连接出错了…再试试？）", timestamp: Date.now() }]);
     }
@@ -162,7 +188,7 @@ export default function App() {
       {/* Main content */}
       <div className="main">
         {tab === "pet" && (
-          <PetView pet={pet} onAction={handleAction} />
+          <PetView pet={pet} onAction={handleAction} aiAnim={aiAnim} aiExpr={aiExpr} />
         )}
         {tab === "chat" && (
           <ChatView

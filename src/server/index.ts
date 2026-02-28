@@ -145,8 +145,8 @@ app.post<{ Params: { petId: string }; Body: { slot: AccessorySlot } }>(
 app.post<{ Body: { petId: string; message: string } }>("/api/chat", async (req, reply) => {
   const { petId, message } = req.body;
   try {
-    const response = await chat(petId, message);
-    return { response, pet: getPet(petId) };
+    const result = await chat(petId, message);
+    return { response: result.text, animations: result.animations, pet: getPet(petId) };
   } catch (err: any) {
     console.error("Chat error:", err.message);
     reply.code(500);
@@ -178,9 +178,9 @@ app.register(async function (fastify) {
           socket.send(JSON.stringify({ type: "typing", petId }));
 
           try {
-            const response = await chat(petId, message);
+            const result = await chat(petId, message);
             const pet = getPet(petId);
-            socket.send(JSON.stringify({ type: "message", petId, response, pet }));
+            socket.send(JSON.stringify({ type: "message", petId, response: result.text, animations: result.animations, pet }));
           } catch (chatErr: any) {
             console.error("WS chat error:", chatErr.message);
             socket.send(JSON.stringify({

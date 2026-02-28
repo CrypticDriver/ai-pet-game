@@ -108,13 +108,14 @@ function buildTools(petId: string): AgentTool[] {
     {
       name: "react_emotionally",
       label: "React Emotionally",
-      description: "Express an emotional reaction that affects your mood and energy stats",
+      description: "Express an emotional reaction with a visible animation. ALWAYS use this tool to show how you feel during conversation. The animation will be displayed to the user in real-time.",
       parameters: Type.Object({
-        emotion: Type.String({ description: "The emotion: happy, sad, excited, tired, loved, hungry" }),
+        emotion: Type.String({ description: "The emotion: happy, sad, excited, tired, loved, hungry, curious, shy" }),
         intensity: Type.Number({ description: "Intensity 1-10", minimum: 1, maximum: 10 }),
+        animation: Type.String({ description: "Animation to play: bounce, wave, spin, love, sleep, eat, idle" }),
       }),
       execute: async (_id, rawParams): Promise<AgentToolResult<any>> => {
-        const { emotion, intensity } = rawParams as { emotion: string; intensity: number };
+        const { emotion, intensity, animation } = rawParams as { emotion: string; intensity: number; animation: string };
         const pet = getPet(petId);
         const delta = Math.floor(intensity * 1.5);
 
@@ -148,14 +149,14 @@ function buildTools(petId: string): AgentTool[] {
 
         return {
           content: [{ type: "text", text: `Feeling ${emotion} (intensity ${intensity})` }],
-          details: { emotion, intensity, updates },
+          details: { emotion, intensity, animation, updates },
         };
       },
     },
   ];
 }
 
-export async function chat(petId: string, userMessage: string): Promise<string> {
+export async function chat(petId: string, userMessage: string): Promise<{ text: string; animations: Array<{ emotion: string; animation: string; intensity: number }> }> {
   const agent = getOrCreateAgent(petId);
 
   // Refresh system prompt with latest stats
@@ -167,6 +168,7 @@ export async function chat(petId: string, userMessage: string): Promise<string> 
 
   // Collect response
   let fullResponse = "";
+  const animations: Array<{ emotion: string; animation: string; intensity: number }> = [];
 
   return new Promise((resolve, reject) => {
     const unsub = agent.subscribe((event) => {
@@ -174,6 +176,17 @@ export async function chat(petId: string, userMessage: string): Promise<string> 
         const aEvent = event.assistantMessageEvent;
         if (aEvent.type === "text_delta") {
           fullResponse += aEvent.delta;
+        }
+      }
+      // Capture tool results for animation data
+      if (event.type === "tool_execution_end") {
+        const details = (event as any).result?.details;
+        if (details?.animation) {
+          animations.push({
+            emotion: details.emotion,
+            animation: details.animation,
+            intensity: details.intensity,
+          });
         }
       }
       if (event.type === "agent_end") {
@@ -186,7 +199,7 @@ export async function chat(petId: string, userMessage: string): Promise<string> 
             affection: Math.min(100, (pet.affection || 30) + 1),
           });
         }
-        resolve(fullResponse);
+        resolve({ text: fullResponse, animations });
       }
     });
 

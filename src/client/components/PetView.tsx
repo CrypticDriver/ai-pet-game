@@ -8,6 +8,8 @@ import type { PetAnimState } from "../engine/petRenderer.js";
 interface Props {
   pet: Pet;
   onAction: (action: "feed" | "play" | "rest") => Promise<void>;
+  aiAnim?: PetAnimState | null;
+  aiExpr?: PetExpression | null;
 }
 
 // Pet body action animations
@@ -30,7 +32,7 @@ const NURTURE_MAP: Record<string, { body: BodyAction; expr: PetExpression }> = {
   rest: { body: "spin", expr: "sleepy" },
 };
 
-export function PetView({ pet, onAction }: Props) {
+export function PetView({ pet, onAction, aiAnim, aiExpr }: Props) {
   const [cooldown, setCooldown] = useState<Record<string, number>>({});
   const [bodyAction, setBodyAction] = useState<BodyAction>("idle");
   const [exprOverride, setExprOverride] = useState<PetExpression | null>(null);
@@ -44,7 +46,19 @@ export function PetView({ pet, onAction }: Props) {
 
   // Base expression from stats (skin-aware)
   const baseExpr: PetExpression = SKIN_TO_PIXEL_HEAD[pet.skin_id] || getExpressionFromStats(pet);
-  const currentExpr = exprOverride || baseExpr;
+  // AI override > manual override > base
+  const currentExpr = aiExpr || exprOverride || baseExpr;
+
+  // AI animation override from chat
+  useEffect(() => {
+    if (aiAnim) {
+      const mapped: Record<string, BodyAction> = { bounce: "bounce", wave: "wave", spin: "spin", love: "love" };
+      const bodyAct = mapped[aiAnim] || "bounce";
+      setBodyAction(bodyAct);
+    } else {
+      setBodyAction("idle");
+    }
+  }, [aiAnim]);
 
   // Trigger a temporary body animation
   const triggerBody = useCallback((action: BodyAction, ms = 3000) => {
