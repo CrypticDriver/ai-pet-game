@@ -1,7 +1,10 @@
 import { Agent, type AgentTool, type AgentToolResult } from "@mariozechner/pi-agent-core";
-import { getModel, streamSimple, type UserMessage } from "@mariozechner/pi-ai";
+import { getModel, streamSimple, type UserMessage, registerBuiltInApiProviders } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
 import { getPet, updatePetStats, getRecentInteractions, addInteraction } from "./db.js";
+
+// Ensure API providers are registered (Bedrock, Anthropic, etc.)
+registerBuiltInApiProviders();
 
 const PET_SYSTEM_PROMPT = `你是一只虚拟 AI 宠物伙伴，名叫{pet_name}。你生活在一个名为"像素乐园"的温馨世界中。
 
@@ -51,7 +54,11 @@ export function getOrCreateAgent(petId: string): Agent {
   if (!pet) throw new Error(`Pet not found: ${petId}`);
 
   // Support Bedrock or direct Anthropic based on env
-  const provider = process.env.AI_PROVIDER || (process.env.AWS_ACCESS_KEY_ID ? "amazon-bedrock" : "anthropic");
+  // AWS IAM roles don't set AWS_ACCESS_KEY_ID, so also check AWS_REGION/AWS_DEFAULT_REGION
+  const provider = process.env.AI_PROVIDER || (
+    (process.env.AWS_ACCESS_KEY_ID || process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION)
+      ? "amazon-bedrock" : "anthropic"
+  );
   const modelId = process.env.AI_MODEL || (provider === "amazon-bedrock"
     ? "us.anthropic.claude-sonnet-4-20250514-v1:0"
     : "claude-sonnet-4-20250514");
