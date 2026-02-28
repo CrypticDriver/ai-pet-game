@@ -59,16 +59,8 @@ export function PetCanvas({
   const prevTimeRef = useRef<number>(0);
   const rafRef = useRef<number>(0);
   const imgRef = useRef<HTMLImageElement | null>(null);
-  const bodyImgRef = useRef<HTMLImageElement | null>(null);
 
-  // Load body SVG
-  useEffect(() => {
-    loadSvgImage("/assets/pet/pet-refined-idle.svg").then((img) => {
-      bodyImgRef.current = img;
-    });
-  }, []);
-
-  // Load expression SVG when it changes
+  // Load expression pixel head (this IS the pet)
   useEffect(() => {
     const src = EXPRESSION_SVG_PATH(expression);
     loadSvgImage(src).then((img) => {
@@ -135,27 +127,18 @@ export function PetCanvas({
       ctx!.rotate(transform.rotation);
       ctx!.scale(transform.scaleX, transform.scaleY);
 
-      // Draw body
-      if (bodyImgRef.current) {
-        ctx!.drawImage(
-          bodyImgRef.current,
-          -petSize / 2,
-          -petSize / 2,
-          petSize,
-          petSize,
-        );
-      }
-
-      // Draw expression head overlay
+      // Draw pixel head as the full pet
       if (imgRef.current) {
-        const headSize = 64;
+        const petSize = 120;
+        ctx!.imageSmoothingEnabled = false; // crisp pixel art
         ctx!.drawImage(
           imgRef.current,
-          -headSize / 2,
-          -petSize / 2 - 4,
-          headSize,
-          headSize,
+          -petSize / 2,
+          -petSize / 2,
+          petSize,
+          petSize,
         );
+        ctx!.imageSmoothingEnabled = true;
       }
 
       ctx!.restore();
