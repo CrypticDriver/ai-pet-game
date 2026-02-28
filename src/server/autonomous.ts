@@ -341,10 +341,6 @@ async function triggerAutonomousSocial() {
 
   console.log(`💬 Autonomous social: ${petA.name} → ${petB.name}: "${topic}"`);
 
-  // Build recent activity context for grounding (anti-hallucination)
-  const petARecent = getRecentActivitySummary(petA.pet_id);
-  const petBRecent = getRecentActivitySummary(petB.pet_id);
-
   // Turn 1: Pet A initiates
   db.prepare(`
     INSERT INTO pet_activity_log (pet_id, action_type, action_data, location)
@@ -356,13 +352,13 @@ async function triggerAutonomousSocial() {
     message: topic,
   }));
 
-  // Anti-hallucination prompt suffix
-  const groundingRule = "\n\n[重要：只能谈论你真实做过的事。你最近的经历如下，不要编造这之外的具体活动或事件。可以表达感受、聊天气、问问题，但不要编造没发生的事。]";
+  // Memory-grounded conversations: each pet's system prompt already includes
+  // their full memory context (recent activities, friends, compressed history).
+  // The AI responds based on real memories, not hallucinations.
 
-  // Turn 2: Pet B replies via AI (grounded in real activity)
+  // Turn 2: Pet B replies via AI
   try {
-    const replyPrompt = `[在广场上，${petA.name}走过来对你说]: ${topic}${groundingRule}\n你最近的真实经历：${petBRecent}`;
-    const replyResult = await chat(petB.pet_id, replyPrompt);
+    const replyResult = await chat(petB.pet_id, `[在广场上，${petA.name}走过来对你说]: ${topic}`);
     const reply = replyResult.text || "嗯嗯！😊";
 
     db.prepare(`
@@ -375,9 +371,8 @@ async function triggerAutonomousSocial() {
       message: reply,
     }));
 
-    // Turn 3: Pet A reacts via AI (grounded in real activity)
-    const reactPrompt = `[在广场上，${petB.name}回复你说]: ${reply}${groundingRule}\n你最近的真实经历：${petARecent}`;
-    const reactResult = await chat(petA.pet_id, reactPrompt);
+    // Turn 3: Pet A reacts via AI
+    const reactResult = await chat(petA.pet_id, `[在广场上，${petB.name}回复你说]: ${reply}`);
     const reaction = reactResult.text || "哈哈～ 😄";
 
     db.prepare(`
@@ -416,28 +411,6 @@ async function triggerAutonomousSocial() {
   } catch (err: any) {
     console.error(`Social chat AI error: ${err.message}`);
   }
-}
-
-/**
- * Get a concise summary of a pet's recent activities for grounding AI responses.
- * This prevents hallucination by giving the AI real facts about what the pet did.
- */
-function getRecentActivitySummary(petId: string): string {
-  const db = getDb();
-  const activities = db.prepare(`
-    SELECT action_type, action_data, created_at FROM pet_activity_log
-    WHERE pet_id = ? AND action_type NOT IN ('social_chat_init', 'social_chat_reply', 'social_chat_react')
-    ORDER BY id DESC LIMIT 5
-  `).all(petId) as any[];
-
-  if (activities.length === 0) return "刚来到广场，还没做什么";
-
-  return activities.map(a => {
-    try {
-      const data = JSON.parse(a.action_data);
-      return data.description || a.action_type;
-    } catch { return a.action_type; }
-  }).join("；");
 }
 
 // ── API helpers ──

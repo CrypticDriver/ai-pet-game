@@ -43,6 +43,7 @@ import {
   setPetLocation,
 } from "./autonomous.js";
 import { getWorldviewInfo } from "./worldview.js";
+import { compressAllMemories } from "./memory.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -306,6 +307,15 @@ setInterval(() => {
 setTimeout(() => {
   try { executeAutonomousBehavior(); } catch {}
 }, 2000);
+
+// ---- Memory compression (every 5 minutes) ----
+
+setInterval(() => {
+  try { compressAllMemories(); } catch (e) { console.error("Memory compression error:", e); }
+}, 5 * 60 * 1000);
+
+// Compress once on startup
+setTimeout(() => { try { compressAllMemories(); } catch {} }, 5000);
 
 // ---- Notification generation (every 15 minutes) ----
 

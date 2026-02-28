@@ -3,6 +3,7 @@ import { getModel, streamSimple, type UserMessage, registerBuiltInApiProviders }
 import { Type } from "@sinclair/typebox";
 import { getPet, updatePetStats, getRecentInteractions, addInteraction } from "./db.js";
 import { getWorldviewPrompt } from "./worldview.js";
+import { buildMemoryContext } from "./memory.js";
 
 // Ensure API providers are registered (Bedrock, Anthropic, etc.)
 registerBuiltInApiProviders();
@@ -118,10 +119,7 @@ export function getOrCreateAgent(petId: string): Agent {
 }
 
 function buildSystemPrompt(pet: any): string {
-  const memoryContext = pet.memory_summary
-    ? `Previous memory summary:\n${pet.memory_summary}`
-    : "This is a new relationship. Get to know your owner!";
-
+  const memoryContext = buildMemoryContext(pet.id);
   const worldviewPrompt = getWorldviewPrompt();
 
   return PET_SYSTEM_PROMPT
