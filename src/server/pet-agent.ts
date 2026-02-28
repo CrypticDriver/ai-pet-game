@@ -62,7 +62,18 @@ export function getOrCreateAgent(petId: string): Agent {
   const modelId = process.env.AI_MODEL || (provider === "amazon-bedrock"
     ? "us.anthropic.claude-sonnet-4-20250514-v1:0"
     : "claude-sonnet-4-20250514");
-  const model = getModel(provider as any, modelId);
+
+  // For Bedrock models, try the exact ID first, then strip prefix to find base model config
+  // and re-apply the prefix (needed for inference profiles like us.amazon.nova-2-lite-v1:0)
+  let model = getModel(provider as any, modelId);
+  if (!model && provider === "amazon-bedrock" && modelId.match(/^(us|eu|global)\./)) {
+    const baseId = modelId.replace(/^(us|eu|global)\./, "");
+    const baseModel = getModel(provider as any, baseId);
+    if (baseModel) {
+      model = { ...baseModel, id: modelId };
+    }
+  }
+  if (!model) throw new Error(`Model not found: ${provider}/${modelId}`);
 
   const systemPrompt = buildSystemPrompt(pet);
 
