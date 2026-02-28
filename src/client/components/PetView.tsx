@@ -1,6 +1,7 @@
-import type { Pet, PetExpression } from "../../shared/types.js";
-import { SKIN_THEMES, EXPRESSION_SVG_PATH, getExpressionFromStats, SKIN_TO_PIXEL_HEAD } from "../../shared/types.js";
+import type { Pet, PetExpression, EquippedAccessory } from "../../shared/types.js";
+import { SKIN_THEMES, EXPRESSION_SVG_PATH, getExpressionFromStats, SKIN_TO_PIXEL_HEAD, SLOT_LAYER_ORDER } from "../../shared/types.js";
 import { useState, useCallback, useEffect } from "react";
+import { api } from "../api.js";
 
 interface Props {
   pet: Pet;
@@ -30,7 +31,13 @@ export function PetView({ pet, onAction }: Props) {
   const [cooldown, setCooldown] = useState<Record<string, number>>({});
   const [bodyAction, setBodyAction] = useState<BodyAction>("idle");
   const [exprOverride, setExprOverride] = useState<PetExpression | null>(null);
+  const [accessories, setAccessories] = useState<EquippedAccessory[]>([]);
   const theme = SKIN_THEMES[pet.skin_id] || SKIN_THEMES.default;
+
+  // Load equipped accessories
+  useEffect(() => {
+    api.getAccessories(pet.id).then(setAccessories).catch(() => {});
+  }, [pet.id, pet.skin_id]);
 
   // Base expression from stats (skin-aware)
   const baseExpr: PetExpression = SKIN_TO_PIXEL_HEAD[pet.skin_id] || getExpressionFromStats(pet);
@@ -111,6 +118,27 @@ export function PetView({ pet, onAction }: Props) {
             style={{ imageRendering: "pixelated" }}
           />
         </div>
+
+        {/* Accessory overlays */}
+        {accessories
+          .sort((a, b) => (SLOT_LAYER_ORDER[a.slot] || 0) - (SLOT_LAYER_ORDER[b.slot] || 0))
+          .map((acc) => (
+            <div
+              key={acc.slot}
+              className={`pet-accessory-layer pet-accessory-${acc.slot}`}
+              style={{ zIndex: SLOT_LAYER_ORDER[acc.slot] + 3 }}
+            >
+              {acc.image_url && (
+                <img
+                  src={`/assets/pet-accessories/${acc.image_url}`}
+                  alt={acc.name}
+                  width="64"
+                  height="64"
+                  style={{ imageRendering: "pixelated" }}
+                />
+              )}
+            </div>
+          ))}
 
         <div className="pet-emotion" key={getEmoji() + Date.now()}>
           {getEmoji()}

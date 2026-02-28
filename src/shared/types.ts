@@ -39,6 +39,24 @@ export interface ChatMessage {
   timestamp: number;
 }
 
+// Accessory system
+export type AccessorySlot = "hat" | "face" | "decoration";
+
+export interface EquippedAccessory {
+  slot: AccessorySlot;
+  item_id: string;
+  name: string;
+  image_url: string | null; // e.g. "accessory-party-hat.svg"
+  rarity: string;
+}
+
+// Accessory layer order (z-index for rendering)
+export const SLOT_LAYER_ORDER: Record<AccessorySlot, number> = {
+  decoration: 1, // behind pet
+  hat: 3,        // above head
+  face: 2,       // on face
+};
+
 // Skin color themes
 export const SKIN_THEMES: Record<string, { primary: string; secondary: string; accent: string; bg: string }> = {
   default: { primary: "#FFD93D", secondary: "#FF6B6B", accent: "#6BCB77", bg: "#2d2d4e" },

@@ -77,6 +77,29 @@ function initSchema(db: Database.Database) {
       ('skin-sunset', 'Sunset Glow', 'skin', 80, 'Warm sunset colors', 'rare'),
       ('skin-forest', 'Forest Green', 'skin', 80, 'Nature spirit', 'rare'),
       ('skin-galaxy', 'Galaxy', 'skin', 200, 'Cosmic sparkle', 'epic');
+
+    -- Pet equipped accessories (many-to-many: pet can wear multiple)
+    CREATE TABLE IF NOT EXISTS pet_accessories (
+      pet_id TEXT NOT NULL REFERENCES pets(id),
+      item_id TEXT NOT NULL REFERENCES items(id),
+      slot TEXT NOT NULL CHECK(slot IN ('hat', 'face', 'decoration')),
+      equipped_at TEXT DEFAULT (datetime('now')),
+      PRIMARY KEY (pet_id, slot)
+    );
+
+    -- Seed accessories
+    INSERT OR IGNORE INTO items (id, name, type, price, description, rarity, image_url) VALUES
+      ('acc-party-hat',    'Party Hat',    'accessory', 30,  'Time to celebrate! 🎉',       'common',    'accessory-party-hat.svg'),
+      ('acc-wizard-hat',   'Wizard Hat',   'accessory', 60,  'Mystical powers ✨',           'rare',      'accessory-wizard-hat.svg'),
+      ('acc-crown',        'Golden Crown', 'accessory', 150, 'Royalty! 👑',                 'epic',      'accessory-crown.svg'),
+      ('acc-bow',          'Cute Bow',     'accessory', 20,  'Pretty ribbon 🎀',            'common',    'accessory-bow.svg'),
+      ('acc-angel-halo',   'Angel Halo',   'accessory', 100, 'Heavenly glow 😇',            'rare',      'accessory-angel-halo.svg'),
+      ('acc-devil-horns',  'Devil Horns',  'accessory', 100, 'A little mischief 😈',        'rare',      'accessory-devil-horns.svg'),
+      ('acc-glasses',      'Round Glasses', 'accessory', 40, 'Scholarly look 🤓',           'common',    'accessory-glasses.svg'),
+      ('acc-mask',         'Mysterious Mask','accessory', 80, 'Who is behind the mask? 🎭', 'rare',      'accessory-mask.svg'),
+      ('acc-monocle',      'Monocle',      'accessory', 60,  'Distinguished 🧐',            'rare',      'accessory-monocle.svg'),
+      ('acc-star',         'Star Charm',   'accessory', 50,  'Twinkle twinkle ⭐',           'common',    'accessory-star.svg'),
+      ('acc-flower',       'Flower Crown', 'accessory', 40,  'Spring vibes 🌸',             'common',    'accessory-flower.svg');
   `);
 }
 
@@ -184,3 +207,44 @@ export function decayStats() {
       updated_at = datetime('now')
   `);
 }
+
+// --- Accessories ---
+
+export type AccessorySlot = "hat" | "face" | "decoration";
+
+export function getEquippedAccessories(petId: string) {
+  return getDb()
+    .prepare(`
+      SELECT pa.slot, pa.item_id, i.name, i.image_url, i.rarity
+      FROM pet_accessories pa
+      JOIN items i ON pa.item_id = i.id
+      WHERE pa.pet_id = ?
+    `)
+    .all(petId) as Array<{ slot: AccessorySlot; item_id: string; name: string; image_url: string | null; rarity: string }>;
+}
+
+export function equipAccessory(petId: string, itemId: string, slot: AccessorySlot): { ok: boolean; error?: string } {
+  const db = getDb();
+  const pet = getPet(petId);
+  if (!pet) return { ok: false, error: "Pet not found" };
+
+  // Check user owns item
+  const owned = db.prepare("SELECT 1 FROM user_items WHERE user_id = ? AND item_id = ?").get(pet.user_id, itemId);
+  if (!owned) return { ok: false, error: "Item not owned" };
+
+  // Check item is accessory
+  const item = db.prepare("SELECT * FROM items WHERE id = ? AND type = 'accessory'").get(itemId) as any;
+  if (!item) return { ok: false, error: "Not an accessory" };
+
+  // Equip (replaces current slot)
+  db.prepare(`
+    INSERT OR REPLACE INTO pet_accessories (pet_id, item_id, slot) VALUES (?, ?, ?)
+  `).run(petId, itemId, slot);
+
+  return { ok: true };
+}
+
+export function unequipAccessory(petId: string, slot: AccessorySlot) {
+  getDb().prepare("DELETE FROM pet_accessories WHERE pet_id = ? AND slot = ?").run(petId, slot);
+}
+

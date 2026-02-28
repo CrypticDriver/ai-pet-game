@@ -1,4 +1,4 @@
-import type { Pet, ShopItem } from "../shared/types.js";
+import type { Pet, ShopItem, EquippedAccessory, AccessorySlot } from "../shared/types.js";
 
 const BASE = "";
 
@@ -39,6 +39,25 @@ export const api = {
     return request<Pet>(`/api/pet/${petId}/skin`, {
       method: "POST",
       body: JSON.stringify({ skinId }),
+    });
+  },
+
+  // Accessories
+  getAccessories(petId: string) {
+    return request<EquippedAccessory[]>(`/api/pet/${petId}/accessories`);
+  },
+
+  equipAccessory(petId: string, itemId: string, slot: AccessorySlot) {
+    return request<{ ok: boolean; error?: string }>(`/api/pet/${petId}/accessories/equip`, {
+      method: "POST",
+      body: JSON.stringify({ itemId, slot }),
+    });
+  },
+
+  unequipAccessory(petId: string, slot: AccessorySlot) {
+    return request<{ ok: boolean }>(`/api/pet/${petId}/accessories/unequip`, {
+      method: "POST",
+      body: JSON.stringify({ slot }),
     });
   },
 

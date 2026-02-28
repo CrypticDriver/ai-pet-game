@@ -15,6 +15,10 @@ import {
   getUserItems,
   purchaseItem,
   decayStats,
+  getEquippedAccessories,
+  equipAccessory,
+  unequipAccessory,
+  type AccessorySlot,
 } from "./db.js";
 import { chat, refreshAgent } from "./pet-agent.js";
 import {
@@ -112,6 +116,30 @@ app.get<{ Params: { userId: string } }>("/api/shop/:userId/owned", async (req) =
 app.post<{ Body: { userId: string; itemId: string } }>("/api/shop/buy", async (req) => {
   return purchaseItem(req.body.userId, req.body.itemId);
 });
+
+// ---- Accessories ----
+
+// Get equipped accessories for a pet
+app.get<{ Params: { petId: string } }>("/api/pet/:petId/accessories", async (req) => {
+  return getEquippedAccessories(req.params.petId);
+});
+
+// Equip an accessory
+app.post<{ Params: { petId: string }; Body: { itemId: string; slot: AccessorySlot } }>(
+  "/api/pet/:petId/accessories/equip",
+  async (req) => {
+    return equipAccessory(req.params.petId, req.body.itemId, req.body.slot);
+  }
+);
+
+// Unequip an accessory slot
+app.post<{ Params: { petId: string }; Body: { slot: AccessorySlot } }>(
+  "/api/pet/:petId/accessories/unequip",
+  async (req) => {
+    unequipAccessory(req.params.petId, req.body.slot);
+    return { ok: true };
+  }
+);
 
 // Chat (REST fallback)
 app.post<{ Body: { petId: string; message: string } }>("/api/chat", async (req, reply) => {
