@@ -292,7 +292,7 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
-// ---- Autonomous behavior (every 60 seconds) ----
+// ---- Autonomous behavior (every 42 seconds per boss directive) ----
 
 setInterval(() => {
   try {
@@ -300,7 +300,7 @@ setInterval(() => {
   } catch (e) {
     console.error("Autonomous behavior error:", e);
   }
-}, 60 * 1000);
+}, 42 * 1000);
 
 // Run once on startup
 setTimeout(() => {
