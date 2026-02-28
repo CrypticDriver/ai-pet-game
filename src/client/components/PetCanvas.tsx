@@ -18,6 +18,7 @@ import {
   applyHueShift,
   clearSpriteCache,
 } from "../engine/petRenderer.js";
+import { renderRoomBackground, ROOM_THEMES } from "../engine/roomBackground.js";
 
 interface PetCanvasProps {
   expression: PetExpression;
@@ -50,8 +51,8 @@ export function PetCanvas({
   expression,
   animState,
   hueShift = 0,
-  width = 220,
-  height = 220,
+  width = 320,
+  height = 280,
   onTap,
 }: PetCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -111,9 +112,12 @@ export function PetCanvas({
       // Clear
       ctx!.clearRect(0, 0, width, height);
 
+      // Draw room background first
+      renderRoomBackground(ctx!, width, height);
+
       const cx = width / 2;
-      const cy = height / 2 + 10;
-      const petSize = 140;
+      const cy = height * 0.55; // pet sits in the lower room area
+      const petSize = 100;
 
       // Get animation transform
       const transform = getAnimTransform(state, cx, cy);
@@ -129,7 +133,6 @@ export function PetCanvas({
 
       // Draw pixel head as the full pet
       if (imgRef.current) {
-        const petSize = 120;
         ctx!.imageSmoothingEnabled = false; // crisp pixel art
         ctx!.drawImage(
           imgRef.current,
