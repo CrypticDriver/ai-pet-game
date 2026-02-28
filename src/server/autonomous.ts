@@ -7,6 +7,7 @@
  */
 
 import { getDb, getPet, updatePetStats } from "./db.js";
+import { chat } from "./pet-agent.js";
 
 // ── DB Schema ──
 
@@ -158,10 +159,17 @@ function buildActivityPool(pet: any, state: any, inPlaza: boolean): PetAction[] 
       );
     }
 
-    // Want to go outside
+    // Want to go outside — actually move to plaza!
     if (pet.mood > 50 && pet.energy > 40 && Math.random() < 0.15) {
       pool.push(
-        { type: "want_plaza", description: "趴在门口…好想去广场玩呀！ 🏞️", emoji: "🏞️", statChanges: { mood: -1 } },
+        {
+          type: "go_to_plaza",
+          description: "决定去广场逛逛！🏞️ 换好衣服出门啦～",
+          emoji: "🏞️",
+          statChanges: { mood: 3, energy: -2 },
+          location: "plaza",
+          moveTarget: { x: 120 + Math.random() * 160, y: 140 + Math.random() * 80 },
+        },
       );
     }
   }
@@ -182,10 +190,17 @@ function buildActivityPool(pet: any, state: any, inPlaza: boolean): PetAction[] 
       );
     }
 
-    // Want to go home
+    // Want to go home — actually go back!
     if (pet.energy < 30 || pet.mood < 35) {
       pool.push(
-        { type: "want_room", description: "有点累了…想回家休息 🏠", emoji: "🏠", statChanges: { mood: 1 } },
+        {
+          type: "go_home",
+          description: "有点累了…回Pod休息去 🏠",
+          emoji: "🏠",
+          statChanges: { mood: 2, energy: 3 },
+          location: "room",
+          moveTarget: { x: 160, y: 180 },
+        },
       );
     }
   }
@@ -234,18 +249,20 @@ export function executeAutonomousBehavior() {
         }
       }
 
-      // Update position
+      // Update position and location
       const newX = action.moveTarget?.x ?? state.position_x;
       const newY = action.moveTarget?.y ?? state.position_y;
+      const newLocation = action.location ?? state.location;
 
       db.prepare(`
         UPDATE pet_state SET
           current_action = ?,
+          location = ?,
           position_x = ?,
           position_y = ?,
           last_autonomous_at = datetime('now')
         WHERE pet_id = ?
-      `).run(action.type, newX, newY, pet.id);
+      `).run(action.type, newLocation, newX, newY, pet.id);
 
       // Log the action
       db.prepare(`
@@ -261,6 +278,134 @@ export function executeAutonomousBehavior() {
     } catch (err) {
       console.error(`Autonomous behavior error for pet ${pet.id}:`, err);
     }
+  }
+
+  // After individual behaviors, trigger autonomous social conversations
+  triggerAutonomousSocial().catch(err => {
+    console.error("Autonomous social error:", err);
+  });
+}
+
+// ── Autonomous Pet-to-Pet Conversations ──
+// Every tick, pets in the plaza may spontaneously talk to each other.
+// Conversations are multi-turn: initiator says something, target replies,
+// then initiator reacts — logged as activity for both pets.
+
+const SOCIAL_TOPICS = [
+  "你好呀！今天天气真好～",
+  "嘿！你也在广场散步吗？",
+  "你看那个喷泉，好漂亮啊✨",
+  "最近有什么好玩的事吗？",
+  "你的Link今天来过了吗？",
+  "我刚从Pod出来，想找人聊天～",
+  "你觉得Origin Node的传说是真的吗？",
+  "Hub今晚好热闹呀！",
+  "你最喜欢广场的哪个角落？",
+  "我今天心情超好！想跟你分享～",
+  "哇，你看起来精神好好呀！",
+  "要不要一起去喷泉那边坐坐？",
+];
+
+async function triggerAutonomousSocial() {
+  const db = getDb();
+
+  // Find all pets currently in the plaza
+  const plazaPets = db.prepare(`
+    SELECT ps.pet_id, ps.position_x, ps.position_y, p.name, p.mood, p.energy
+    FROM pet_state ps
+    JOIN pets p ON ps.pet_id = p.id
+    WHERE ps.location = 'plaza' AND p.mood > 30 AND p.energy > 20
+  `).all() as any[];
+
+  if (plazaPets.length < 2) return; // Need at least 2 pets
+
+  // Check if a conversation happened recently (throttle: 1 conversation per ~2 minutes)
+  const recentChat = db.prepare(`
+    SELECT 1 FROM pet_activity_log
+    WHERE action_type IN ('social_chat_init', 'social_chat_reply', 'social_chat_react')
+    AND created_at > datetime('now', '-2 minutes')
+    LIMIT 1
+  `).get();
+
+  if (recentChat) return; // Don't spam conversations
+
+  // ~30% chance each tick when conditions met
+  if (Math.random() > 0.30) return;
+
+  // Pick two random pets
+  const shuffled = plazaPets.sort(() => Math.random() - 0.5);
+  const petA = shuffled[0]; // Initiator
+  const petB = shuffled[1]; // Target
+
+  const topic = SOCIAL_TOPICS[Math.floor(Math.random() * SOCIAL_TOPICS.length)];
+
+  console.log(`💬 Autonomous social: ${petA.name} → ${petB.name}: "${topic}"`);
+
+  // Turn 1: Pet A initiates
+  db.prepare(`
+    INSERT INTO pet_activity_log (pet_id, action_type, action_data, location)
+    VALUES (?, 'social_chat_init', ?, 'plaza')
+  `).run(petA.pet_id, JSON.stringify({
+    description: `跑到${petB.name}面前说: "${topic}" 💬`,
+    emoji: "💬",
+    targetPet: petB.name,
+    message: topic,
+  }));
+
+  // Turn 2: Pet B replies via AI
+  try {
+    const replyResult = await chat(petB.pet_id, `[在广场上，${petA.name}走过来对你说]: ${topic}`);
+    const reply = replyResult.text || "嗯嗯！😊";
+
+    db.prepare(`
+      INSERT INTO pet_activity_log (pet_id, action_type, action_data, location)
+      VALUES (?, 'social_chat_reply', ?, 'plaza')
+    `).run(petB.pet_id, JSON.stringify({
+      description: `回复${petA.name}: "${reply.slice(0, 50)}${reply.length > 50 ? '...' : ''}" 💬`,
+      emoji: "💬",
+      targetPet: petA.name,
+      message: reply,
+    }));
+
+    // Turn 3: Pet A reacts via AI
+    const reactResult = await chat(petA.pet_id, `[在广场上，${petB.name}回复你说]: ${reply}`);
+    const reaction = reactResult.text || "哈哈～ 😄";
+
+    db.prepare(`
+      INSERT INTO pet_activity_log (pet_id, action_type, action_data, location)
+      VALUES (?, 'social_chat_react', ?, 'plaza')
+    `).run(petA.pet_id, JSON.stringify({
+      description: `对${petB.name}说: "${reaction.slice(0, 50)}${reaction.length > 50 ? '...' : ''}" 😄`,
+      emoji: "😄",
+      targetPet: petB.name,
+      message: reaction,
+    }));
+
+    // Both pets get mood boost from social interaction
+    updatePetStats(petA.pet_id, { mood: Math.min(100, petA.mood + 5) });
+    updatePetStats(petB.pet_id, { mood: Math.min(100, petB.mood + 5) });
+
+    // Maybe become friends if not already
+    if (Math.random() < 0.2) {
+      const existing = db.prepare("SELECT 1 FROM friends WHERE pet_id = ? AND friend_pet_id = ?").get(petA.pet_id, petB.pet_id);
+      if (!existing) {
+        db.prepare("INSERT OR IGNORE INTO friends (pet_id, friend_pet_id) VALUES (?, ?)").run(petA.pet_id, petB.pet_id);
+        db.prepare("INSERT OR IGNORE INTO friends (pet_id, friend_pet_id) VALUES (?, ?)").run(petB.pet_id, petA.pet_id);
+        db.prepare(`
+          INSERT INTO pet_activity_log (pet_id, action_type, action_data, location)
+          VALUES (?, 'became_friends', ?, 'plaza')
+        `).run(petA.pet_id, JSON.stringify({
+          description: `和${petB.name}成为了好朋友！ 💕`,
+          emoji: "💕",
+          targetPet: petB.name,
+        }));
+        console.log(`💕 ${petA.name} and ${petB.name} became friends!`);
+      }
+    }
+
+    console.log(`✅ Social conversation complete: ${petA.name} ↔ ${petB.name}`);
+  } catch (err: any) {
+    console.error(`Social chat AI error: ${err.message}`);
   }
 }
 
