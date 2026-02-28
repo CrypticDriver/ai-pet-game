@@ -112,6 +112,22 @@
   cursor: pointer;
 }
 
+.pet-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pet-head-overlay {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
 .pixel-pet {
   width: 120px;
   height: 120px;
@@ -225,6 +241,11 @@
 .pet-action-mini:hover {
   border-color: var(--accent);
   transform: scale(1.15);
+}
+
+.pet-action-mini.active {
+  border-color: var(--accent);
+  background: rgba(107,203,119,0.15);
 }
 
 .pet-action-mini:active {

@@ -1,17 +1,16 @@
-import type { Pet } from "../../shared/types.js";
-import { SKIN_THEMES } from "../../shared/types.js";
-import { useState } from "react";
+import type { Pet, PetExpression } from "../../shared/types.js";
+import { SKIN_THEMES, EXPRESSION_SVG_PATH, getExpressionFromStats, SKIN_TO_PIXEL_HEAD } from "../../shared/types.js";
+import { useState, useCallback, useEffect } from "react";
 
 interface Props {
   pet: Pet;
   onAction: (action: "feed" | "play" | "rest") => Promise<void>;
 }
 
-// Actions that trigger animated SVGs
-type PetAction = "idle" | "bounce" | "headshake" | "wave" | "spin" | "love";
+// Pet body action animations
+type BodyAction = "idle" | "bounce" | "headshake" | "wave" | "spin" | "love";
 
-// Map actions to SVG filenames
-const ACTION_SVG: Record<PetAction, string> = {
+const BODY_ACTION_SVG: Record<BodyAction, string> = {
   idle: "/assets/pet/pet-refined-idle.svg",
   bounce: "/assets/pet/pet-action-bounce.svg",
   headshake: "/assets/pet/pet-action-headshake.svg",
@@ -20,48 +19,45 @@ const ACTION_SVG: Record<PetAction, string> = {
   love: "/assets/pet/pet-action-love.svg",
 };
 
-// Map nurturing actions to pet animations
-const NURTURE_ANIMATIONS: Record<string, PetAction> = {
-  feed: "love",
-  play: "bounce",
-  rest: "spin",
+// Map nurture actions to body animations + expression reactions
+const NURTURE_MAP: Record<string, { body: BodyAction; expr: PetExpression }> = {
+  feed: { body: "love", expr: "happy" },
+  play: { body: "bounce", expr: "sparkle" },
+  rest: { body: "spin", expr: "sleepy" },
 };
 
 export function PetView({ pet, onAction }: Props) {
   const [cooldown, setCooldown] = useState<Record<string, number>>({});
-  const [currentAction, setCurrentAction] = useState<PetAction>("idle");
+  const [bodyAction, setBodyAction] = useState<BodyAction>("idle");
+  const [exprOverride, setExprOverride] = useState<PetExpression | null>(null);
   const theme = SKIN_THEMES[pet.skin_id] || SKIN_THEMES.default;
 
-  const getEmotion = (): string => {
-    if (pet.mood < 30) return "sad";
-    if (pet.energy < 20) return "sleepy";
-    if (pet.mood > 70 && pet.energy > 50) return "happy";
-    return "neutral";
-  };
+  // Base expression from stats (skin-aware)
+  const baseExpr: PetExpression = SKIN_TO_PIXEL_HEAD[pet.skin_id] || getExpressionFromStats(pet);
+  const currentExpr = exprOverride || baseExpr;
 
-  const getEmoji = (): string => {
-    const e = getEmotion();
-    if (e === "happy") return "😊";
-    if (e === "sad") return "😢";
-    if (e === "sleepy") return "😴";
-    return "🙂";
-  };
+  // Trigger a temporary body animation
+  const triggerBody = useCallback((action: BodyAction, ms = 3000) => {
+    setBodyAction(action);
+    setTimeout(() => setBodyAction("idle"), ms);
+  }, []);
 
-  const triggerAction = (action: PetAction, durationMs = 3000) => {
-    setCurrentAction(action);
-    setTimeout(() => setCurrentAction("idle"), durationMs);
-  };
+  // Trigger a temporary expression override
+  const triggerExpr = useCallback((expr: PetExpression, ms = 3000) => {
+    setExprOverride(expr);
+    setTimeout(() => setExprOverride(null), ms);
+  }, []);
 
   const handleAction = async (action: "feed" | "play" | "rest") => {
     if (cooldown[action]) return;
     setCooldown((prev) => ({ ...prev, [action]: 1 }));
 
-    // Trigger animation
-    triggerAction(NURTURE_ANIMATIONS[action] || "bounce", 3000);
+    const map = NURTURE_MAP[action];
+    triggerBody(map.body, 3000);
+    triggerExpr(map.expr, 3000);
 
     await onAction(action);
 
-    // 10 second cooldown
     setTimeout(() => {
       setCooldown((prev) => {
         const next = { ...prev };
@@ -71,41 +67,79 @@ export function PetView({ pet, onAction }: Props) {
     }, 10000);
   };
 
-  // Convert hunger to "fullness" for display
+  const getEmoji = (): string => {
+    const e = currentExpr;
+    if (e === "happy" || e === "sparkle" || e === "love") return "😊";
+    if (e === "sad") return "😢";
+    if (e === "sleepy") return "😴";
+    if (e === "hungry") return "🍖";
+    if (e === "angry") return "😠";
+    if (e === "surprised") return "😮";
+    return "🙂";
+  };
+
   const fullness = 100 - pet.hunger;
 
   return (
     <div className="pet-view">
-      {/* Pet Stage */}
+      {/* Pet Stage: body + pixel head overlay */}
       <div
         className="pet-stage"
         style={{ background: `radial-gradient(circle, ${theme.bg}, transparent)` }}
-        onClick={() => triggerAction("wave", 2000)}
+        onClick={() => { triggerBody("wave", 2000); triggerExpr("wink", 2000); }}
       >
-        <div className={`pixel-pet ${getEmotion()}`}>
+        {/* Full-body SVG */}
+        <div className="pet-body">
           <object
             type="image/svg+xml"
-            data={ACTION_SVG[currentAction]}
+            data={BODY_ACTION_SVG[bodyAction]}
             width="180"
             height="180"
-            style={{ imageRendering: "auto", pointerEvents: "none" }}
+            style={{ pointerEvents: "none" }}
           >
-            {/* Fallback text */}
             🐾
           </object>
         </div>
+
+        {/* Pixel head overlay */}
+        <div className="pet-head-overlay">
+          <img
+            src={EXPRESSION_SVG_PATH(currentExpr)}
+            alt={currentExpr}
+            width="80"
+            height="80"
+            style={{ imageRendering: "pixelated" }}
+          />
+        </div>
+
         <div className="pet-emotion" key={getEmoji() + Date.now()}>
           {getEmoji()}
         </div>
       </div>
 
-      {/* Pet Action Buttons (tap to animate) */}
+      {/* Expression quick-switch row */}
       <div className="pet-actions-row">
-        {(["bounce", "headshake", "wave", "spin", "love"] as PetAction[]).map((a) => (
+        {(["happy", "sad", "love", "sparkle", "party", "ghost", "angel", "devil"] as PetExpression[]).map((e) => (
+          <button
+            key={e}
+            className={`pet-action-mini ${currentExpr === e ? "active" : ""}`}
+            onClick={() => triggerExpr(e, 3000)}
+            title={e}
+          >
+            {e === "happy" ? "😊" : e === "sad" ? "😢" : e === "love" ? "💕"
+              : e === "sparkle" ? "✨" : e === "party" ? "🎉" : e === "ghost" ? "👻"
+              : e === "angel" ? "😇" : "😈"}
+          </button>
+        ))}
+      </div>
+
+      {/* Body action row */}
+      <div className="pet-actions-row">
+        {(["bounce", "headshake", "wave", "spin", "love"] as BodyAction[]).map((a) => (
           <button
             key={a}
             className="pet-action-mini"
-            onClick={() => triggerAction(a, 2500)}
+            onClick={() => triggerBody(a, 2500)}
             title={a}
           >
             {a === "bounce" ? "🦘" : a === "headshake" ? "🤔" : a === "wave" ? "👋" : a === "spin" ? "🔄" : "💕"}
