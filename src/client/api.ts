@@ -3,8 +3,11 @@ import type { Pet, ShopItem, EquippedAccessory, AccessorySlot } from "../shared/
 const BASE = "";
 
 async function request<T>(url: string, opts?: RequestInit): Promise<T> {
+  const headers: Record<string, string> = {};
+  // Only set Content-Type for requests with body
+  if (opts?.body) headers["Content-Type"] = "application/json";
   const res = await fetch(`${BASE}${url}`, {
-    headers: { "Content-Type": "application/json" },
+    headers,
     ...opts,
   });
   if (!res.ok) throw new Error(`API error: ${res.status}`);

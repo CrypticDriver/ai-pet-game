@@ -12,6 +12,7 @@ type Tab = "pet" | "chat" | "shop";
 
 export default function App() {
   const [userId, setUserId] = useState<string | null>(() => localStorage.getItem("pet-userId"));
+  const [pendingPetName, setPendingPetName] = useState<string | null>(null);
   const [pet, setPet] = useState<Pet | null>(null);
   const [tab, setTab] = useState<Tab>("pet");
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
@@ -43,7 +44,7 @@ export default function App() {
   useEffect(() => {
     if (!userId) return;
     setLoading(true);
-    api.init(userId, userId)
+    api.init(userId, userId, pendingPetName || undefined)
       .then(({ pet }) => {
         setPet(pet);
         return Promise.all([api.getShop(), api.getOwned(userId)]);
@@ -54,9 +55,7 @@ export default function App() {
       })
       .catch((e) => showToast(`Error: ${e.message}`))
       .finally(() => setLoading(false));
-  }, [userId, showToast]);
-
-  // Poll pet stats every 30s
+  }, [userId, pendingPetName, showToast]);  // Poll pet stats every 30s
   useEffect(() => {
     if (!pet) return;
     const iv = setInterval(() => {
@@ -87,6 +86,7 @@ export default function App() {
   const handleInit = async (name: string, petName: string) => {
     const uid = `user-${Date.now()}`;
     localStorage.setItem("pet-userId", uid);
+    setPendingPetName(petName);
     setUserId(uid);
   };
 
