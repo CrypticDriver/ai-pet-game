@@ -36,9 +36,10 @@ interface Props {
   petId: string;
   petName: string;
   onShowToast: (msg: string) => void;
+  onExitPlaza?: () => void;
 }
 
-export function PlazaView({ petId, petName, onShowToast }: Props) {
+export function PlazaView({ petId, petName, onShowToast, onExitPlaza }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const [pets, setPets] = useState<PlazaPetInfo[]>([]);
@@ -354,6 +355,9 @@ export function PlazaView({ petId, petName, onShowToast }: Props) {
   return (
     <div className={`plaza-view ${isLandscape ? "plaza-landscape" : ""}`}>
       <div className="plaza-header">
+        {isLandscape && onExitPlaza && (
+          <button className="plaza-back-btn" onClick={onExitPlaza}>← 返回</button>
+        )}
         <span>🏞️ 广场</span>
         <span className="plaza-online">{pets.length} 只宠物在线</span>
         {!connected && <span style={{ color: "var(--red)", fontSize: "8px" }}>连接中...</span>}

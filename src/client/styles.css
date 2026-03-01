@@ -807,8 +807,8 @@
 }
 
 .plaza-landscape .plaza-header {
-  padding: 4px 12px;
-  font-size: 11px;
+  padding: 2px 12px;
+  font-size: 10px;
 }
 
 .plaza-landscape .plaza-canvas-wrap {
@@ -820,7 +820,7 @@
 }
 
 .plaza-landscape .plaza-canvas-wrap canvas {
-  max-height: calc(100vh - 120px);
+  max-height: calc(100vh - 60px);
   width: auto !important;
 }
 
@@ -850,4 +850,19 @@
     max-width: 100%;
     max-height: calc(100vh - 100px);
   }
+}
+
+/* Plaza back button (landscape mode) */
+.plaza-back-btn {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 10px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.plaza-back-btn:hover {
+  background: rgba(255,255,255,0.2);
 }

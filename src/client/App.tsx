@@ -16,6 +16,7 @@ export default function App() {
   const [pendingPetName, setPendingPetName] = useState<string | null>(null);
   const [pet, setPet] = useState<Pet | null>(null);
   const [tab, setTab] = useState<Tab>("pet");
+  const [isPlazaLandscape, setIsPlazaLandscape] = useState(false);
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [ownedItems, setOwnedItems] = useState<ShopItem[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -64,6 +65,22 @@ export default function App() {
     }, 30000);
     return () => clearInterval(iv);
   }, [pet?.id]);
+
+  // Detect landscape mode for plaza tab
+  useEffect(() => {
+    if (tab !== "plaza") {
+      setIsPlazaLandscape(false);
+      return;
+    }
+    const check = () => setIsPlazaLandscape(window.innerWidth > window.innerHeight);
+    check();
+    window.addEventListener("resize", check);
+    window.addEventListener("orientationchange", check);
+    return () => {
+      window.removeEventListener("resize", check);
+      window.removeEventListener("orientationchange", check);
+    };
+  }, [tab]);
 
   // Poll notifications every 60s
   useEffect(() => {
@@ -172,16 +189,18 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* Header */}
-      <header className="header">
-        <div>
-          <h1>AI Pet</h1>
-          <div className="pet-name">{pet.name}</div>
-        </div>
-        <div style={{ fontSize: "10px", color: "var(--text-dim)" }}>
-          Lv.{Math.floor(pet.affection / 10) + 1}
-        </div>
-      </header>
+      {/* Header — hidden in plaza landscape */}
+      {!isPlazaLandscape && (
+        <header className="header">
+          <div>
+            <h1>AI Pet</h1>
+            <div className="pet-name">{pet.name}</div>
+          </div>
+          <div style={{ fontSize: "10px", color: "var(--text-dim)" }}>
+            Lv.{Math.floor(pet.affection / 10) + 1}
+          </div>
+        </header>
+      )}
 
       {/* Toast */}
       {toast && <div className="toast">{toast}</div>}
@@ -208,11 +227,12 @@ export default function App() {
           />
         )}
         {tab === "plaza" && (
-          <PlazaView petId={pet.id} petName={pet.name} onShowToast={showToast} />
+          <PlazaView petId={pet.id} petName={pet.name} onShowToast={showToast} onExitPlaza={() => setTab("pet")} />
         )}
       </div>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation — hidden in plaza landscape */}
+      {!isPlazaLandscape && (
       <nav className="nav">
         <button className={tab === "pet" ? "active" : ""} onClick={() => setTab("pet")}>
           <span className="icon">🐾</span>
@@ -231,6 +251,7 @@ export default function App() {
           广场
         </button>
       </nav>
+      )}
     </div>
   );
 }
