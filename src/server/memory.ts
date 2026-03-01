@@ -13,6 +13,7 @@
  */
 
 import { getDb, getPet, updatePetMemory } from "./db.js";
+import { getRecentInsights } from "./soul.js";
 import { chat } from "./pet-agent.js";
 
 // ── DB Schema ──
@@ -97,6 +98,14 @@ export function buildMemoryContext(petId: string): string {
   if (friends.length > 0) {
     parts.push(`## 你的朋友\n${friends.map((f: any) => f.name).join("、")}`);
   }
+
+  // Daily insights (reflections)
+  try {
+    const insights = getRecentInsights(petId, 3);
+    if (insights.length > 0) {
+      parts.push(`## 你最近的感悟\n${insights.map(i => `- ${i}`).join("\n")}`);
+    }
+  } catch { /* soul module not ready yet */ }
 
   // Grounding rule
   parts.push(`## 重要规则\n你只能谈论真实发生过的事。上面列出了你的真实记忆和经历。你可以表达感受、聊日常、问问题，但不要编造没有发生过的具体活动或事件。`);

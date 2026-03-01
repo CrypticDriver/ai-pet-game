@@ -4,6 +4,7 @@ import { Type } from "@sinclair/typebox";
 import { getPet, updatePetStats, getRecentInteractions, addInteraction } from "./db.js";
 import { getWorldviewPrompt } from "./worldview.js";
 import { buildMemoryContext } from "./memory.js";
+import { getPetSoul, soulToPrompt } from "./soul.js";
 
 // Ensure API providers are registered (Bedrock, Anthropic, etc.)
 registerBuiltInApiProviders();
@@ -12,6 +13,8 @@ const PET_SYSTEM_PROMPT = `{worldview_prompt}
 
 ## 你的身份
 你叫{pet_name}，是一只生活在PixelVerse的Pix。
+
+{soul_context}
 
 ## 性格核心
 - 温暖、细腻、情感丰富
@@ -121,10 +124,13 @@ export function getOrCreateAgent(petId: string): Agent {
 function buildSystemPrompt(pet: any): string {
   const memoryContext = buildMemoryContext(pet.id);
   const worldviewPrompt = getWorldviewPrompt();
+  const soul = getPetSoul(pet.id);
+  const soulContext = soulToPrompt(soul);
 
   return PET_SYSTEM_PROMPT
     .replace("{worldview_prompt}", worldviewPrompt)
     .replace("{pet_name}", pet.name || "Pixel")
+    .replace("{soul_context}", soulContext)
     .replace("{mood}", String(pet.mood))
     .replace("{energy}", String(pet.energy))
     .replace("{hunger}", String(pet.hunger))

@@ -44,6 +44,7 @@ import {
 } from "./autonomous.js";
 import { getWorldviewInfo } from "./worldview.js";
 import { compressAllMemories, initMemorySchema } from "./memory.js";
+import { initSoulSchema, evolveAllSouls, reflectAllPets } from "./soul.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -192,6 +193,7 @@ app.get("/api/worldview", async () => {
 initPlazaSchema();
 initAutonomousSchema();
 initMemorySchema();
+initSoulSchema();
 
 // Get online pets in plaza
 app.get("/api/plaza/pets", async () => {
@@ -234,6 +236,18 @@ app.get<{ Params: { petId: string }; Querystring: { limit?: string } }>(
 // Get pet autonomous state (location, position, current action)
 app.get<{ Params: { petId: string } }>("/api/pet/:petId/state", async (req) => {
   return getPetState(req.params.petId) || { location: "room", position_x: 160, position_y: 180, current_action: "idle" };
+});
+
+// Get pet soul (personality)
+app.get<{ Params: { petId: string } }>("/api/pet/:petId/soul", async (req) => {
+  const { getPetSoul } = await import("./soul.js");
+  return getPetSoul(req.params.petId);
+});
+
+// Get pet insights (daily reflections)
+app.get<{ Params: { petId: string } }>("/api/pet/:petId/insights", async (req) => {
+  const { getRecentInsights } = await import("./soul.js");
+  return { insights: getRecentInsights(req.params.petId, 10) };
 });
 
 // Set pet location (room/plaza)
@@ -317,6 +331,18 @@ setInterval(() => {
 
 // Compress once on startup
 setTimeout(() => { try { compressAllMemories(); } catch {} }, 5000);
+
+// ---- Daily reflection (every 6 hours, checks internally if already done today) ----
+
+setInterval(() => {
+  reflectAllPets().catch(e => console.error("Reflection error:", e));
+}, 6 * 60 * 60 * 1000);
+
+// ---- Weekly soul evolution (every 24 hours, checks internally if 7 days passed) ----
+
+setInterval(() => {
+  evolveAllSouls().catch(e => console.error("Soul evolution error:", e));
+}, 24 * 60 * 60 * 1000);
 
 // ---- Notification generation (every 15 minutes) ----
 
