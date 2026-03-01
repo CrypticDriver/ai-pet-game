@@ -1,6 +1,7 @@
 import { Agent, type AgentTool, type AgentToolResult } from "@mariozechner/pi-agent-core";
 import { getModel, streamSimple, type UserMessage, registerBuiltInApiProviders } from "@mariozechner/pi-ai";
 import { Type } from "@sinclair/typebox";
+import { LRUCache } from "lru-cache";
 import { getPet, updatePetStats, getRecentInteractions, addInteraction } from "./db.js";
 import { getWorldviewPrompt } from "./worldview.js";
 import { buildMemoryContext } from "./memory.js";
@@ -58,8 +59,16 @@ const PET_SYSTEM_PROMPT = `{worldview_prompt}
 
 以Pix的身份回应。你就是一只真实的Pix，活在PixelVerse里。`;
 
-// Map of petId -> Agent
-const agents = new Map<string, Agent>();
+// LRU Cache: max 200 agents, auto-evict after 30 min idle
+const agents = new LRUCache<string, Agent>({
+  max: 200,
+  ttl: 30 * 60 * 1000, // 30 minutes
+  dispose: (agent, petId) => {
+    console.log(`♻️ Agent evicted from cache: ${petId}`);
+    // Agent conversation history is already persisted in interactions table
+    // via addInteraction() calls in chat(). No extra work needed on eviction.
+  },
+});
 
 export function getOrCreateAgent(petId: string): Agent {
   if (agents.has(petId)) return agents.get(petId)!;
