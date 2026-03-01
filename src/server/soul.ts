@@ -205,10 +205,18 @@ export function soulToPrompt(soul: PetSoul): string {
  * Evolve pet's personality based on recent experiences.
  * Called weekly or when significant events happen.
  * Each trait changes by at most ±3 per evolution.
+ * Traits are bounded [10, 95] and have diminishing returns above 80.
  */
 export async function evolveSoul(petId: string) {
   const db = getDb();
   const soul = getPetSoul(petId);
+
+  // Helper: clamp trait with diminishing returns
+  const adjustTrait = (current: number, delta: number): number => {
+    // Diminishing returns: above 80, gains are halved
+    const effectiveDelta = current >= 80 && delta > 0 ? Math.ceil(delta / 2) : delta;
+    return Math.max(10, Math.min(95, current + effectiveDelta));
+  };
 
   // Count recent activities to determine trait shifts
   const weekAgo = new Date(Date.now() - 7 * 86400 * 1000).toISOString();
@@ -220,37 +228,89 @@ export async function evolveSoul(petId: string) {
   `).all(petId, weekAgo) as Array<{ action_type: string; cnt: number }>;
 
   const actMap = Object.fromEntries(activities.map(a => [a.action_type, a.cnt]));
+  const totalActions = activities.reduce((s, a) => s + a.cnt, 0);
   const changes: string[] = [];
 
-  // Social activities → sociability
+  // ── Social activities → sociability ──
   const socialCount = (actMap["social_chat_init"] || 0) + (actMap["social_chat_reply"] || 0);
   if (socialCount > 5) {
-    soul.traits.sociability = Math.min(100, soul.traits.sociability + 3);
+    soul.traits.sociability = adjustTrait(soul.traits.sociability, 3);
     changes.push("社交性+3");
-  } else if (socialCount === 0) {
-    soul.traits.sociability = Math.max(0, soul.traits.sociability - 1);
+  } else if (socialCount === 0 && totalActions > 5) {
+    // Active but no socializing → sociability slowly drops
+    soul.traits.sociability = adjustTrait(soul.traits.sociability, -1);
     changes.push("社交性-1");
   }
 
-  // Exploration activities → curiosity
-  const exploreCount = (actMap["explore_room"] || 0) + (actMap["go_to_plaza"] || 0);
+  // ── Exploration → curiosity ──
+  const exploreCount = (actMap["explore_room"] || 0) + (actMap["go_to_plaza"] || 0) + (actMap["chase_butterfly"] || 0);
   if (exploreCount > 3) {
-    soul.traits.curiosity = Math.min(100, soul.traits.curiosity + 2);
+    soul.traits.curiosity = adjustTrait(soul.traits.curiosity, 2);
     changes.push("好奇心+2");
   }
 
-  // Play activities → playfulness
-  const playCount = actMap["play"] || 0;
+  // ── Play → playfulness ──
+  const playCount = (actMap["play"] || 0) + (actMap["fountain_play"] || 0);
   if (playCount > 5) {
-    soul.traits.playfulness = Math.min(100, soul.traits.playfulness + 2);
+    soul.traits.playfulness = adjustTrait(soul.traits.playfulness, 2);
     changes.push("活泼度+2");
   }
 
-  // Friend making → gentleness
-  const friendCount = actMap["became_friends"] || 0;
-  if (friendCount > 0) {
-    soul.traits.gentleness = Math.min(100, soul.traits.gentleness + 2);
+  // ── Friend making → gentleness ──
+  const friendMade = actMap["became_friends"] || 0;
+  if (friendMade > 0) {
+    soul.traits.gentleness = adjustTrait(soul.traits.gentleness, 2);
     changes.push("温柔度+2");
+  }
+
+  // ── Neglected (very few actions) → independence ↑ ──
+  if (totalActions < 5) {
+    soul.traits.independence = adjustTrait(soul.traits.independence, 3);
+    changes.push("独立性+3（自己待着的时间多）");
+  }
+
+  // ── Emotional conversations → emotionality ──
+  const emotionalMemories = (db.prepare(`
+    SELECT COUNT(*) as cnt FROM pet_social_memory
+    WHERE pet_id = ? AND emotional_tag IN ('warm', 'happy', 'sad', 'curious')
+    AND created_at > ?
+  `).get(petId, weekAgo) as any)?.cnt || 0;
+
+  if (emotionalMemories > 3) {
+    soul.traits.emotionality = adjustTrait(soul.traits.emotionality, 2);
+    changes.push("情感强度+2");
+  }
+
+  // ── Link interaction → gentleness + less independence ──
+  const feedCount = actMap["feed"] || 0;
+  const restCount = actMap["rest"] || 0;
+  if (feedCount + restCount + playCount > 8) {
+    soul.traits.gentleness = adjustTrait(soul.traits.gentleness, 1);
+    soul.traits.independence = adjustTrait(soul.traits.independence, -2);
+    changes.push("温柔度+1（Link照顾多）");
+    changes.push("独立性-2（更依赖Link）");
+  }
+
+  // ── Daydreaming/window watching → emotionality + curiosity ──
+  const dreamCount = (actMap["daydream"] || 0) + (actMap["watch_window"] || 0);
+  if (dreamCount > 4) {
+    soul.traits.emotionality = adjustTrait(soul.traits.emotionality, 1);
+    changes.push("情感强度+1（爱思考）");
+  }
+
+  // ── Night activity → not morning person ──
+  const nightActivities = db.prepare(`
+    SELECT COUNT(*) as cnt FROM pet_activity_log
+    WHERE pet_id = ? AND created_at > ?
+    AND CAST(strftime('%H', created_at) AS INTEGER) >= 22
+  `).get(petId, weekAgo) as any;
+  if (nightActivities?.cnt > 3) {
+    soul.tendencies.morningPerson = false;
+  }
+
+  // ── Eating a lot → foodie ──
+  if ((actMap["feed"] || 0) + (actMap["eat"] || 0) > 6) {
+    soul.tendencies.foodie = true;
   }
 
   // Discover preferences from most frequent activities
