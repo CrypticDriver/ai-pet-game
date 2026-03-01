@@ -45,6 +45,7 @@ import {
 import { getWorldviewInfo } from "./worldview.js";
 import { compressAllMemories, initMemorySchema } from "./memory.js";
 import { initSoulSchema, evolveAllSouls, reflectAllPets } from "./soul.js";
+import { runSocialHealthCheck } from "./social-health.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -250,6 +251,12 @@ app.get<{ Params: { petId: string } }>("/api/pet/:petId/insights", async (req) =
   return { insights: getRecentInsights(req.params.petId, 10) };
 });
 
+// Get pet social health
+app.get<{ Params: { petId: string } }>("/api/pet/:petId/social-health", async (req) => {
+  const { checkSocialHealth } = await import("./social-health.js");
+  return checkSocialHealth(req.params.petId);
+});
+
 // Set pet location (room/plaza)
 app.post<{ Params: { petId: string }; Body: { location: "room" | "plaza" } }>(
   "/api/pet/:petId/location",
@@ -343,6 +350,17 @@ setInterval(() => {
 setInterval(() => {
   evolveAllSouls().catch(e => console.error("Soul evolution error:", e));
 }, 24 * 60 * 60 * 1000);
+
+// ---- Social health check (every 4 hours) ----
+
+setInterval(() => {
+  try { runSocialHealthCheck(); } catch (e) { console.error("Social health error:", e); }
+}, 4 * 60 * 60 * 1000);
+
+// Run once on startup (after 30s to let pets populate)
+setTimeout(() => {
+  try { runSocialHealthCheck(); } catch {}
+}, 30000);
 
 // ---- Notification generation (every 15 minutes) ----
 

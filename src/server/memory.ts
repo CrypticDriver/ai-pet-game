@@ -28,11 +28,17 @@ export function initMemorySchema() {
       memory_type TEXT NOT NULL CHECK(memory_type IN ('first_meet', 'conversation', 'shared_activity', 'impression', 'friendship')),
       memory_text TEXT NOT NULL,
       emotional_tag TEXT DEFAULT 'neutral',
+      importance INTEGER DEFAULT 5 CHECK(importance BETWEEN 1 AND 10),
       created_at TEXT DEFAULT (datetime('now'))
     );
 
     CREATE INDEX IF NOT EXISTS idx_social_memory_pet ON pet_social_memory(pet_id, target_pet_id);
   `);
+
+  // Add importance column if missing (migration for existing DBs)
+  try {
+    db.exec(`ALTER TABLE pet_social_memory ADD COLUMN importance INTEGER DEFAULT 5`);
+  } catch { /* already exists */ }
 }
 
 /**
@@ -122,10 +128,10 @@ export function buildMemoryContext(petId: string): string {
 export function getMemoriesAbout(petId: string, targetPetId: string): string {
   const db = getDb();
   const memories = db.prepare(`
-    SELECT memory_type, memory_text, emotional_tag, created_at
+    SELECT memory_type, memory_text, emotional_tag, importance, created_at
     FROM pet_social_memory
     WHERE pet_id = ? AND target_pet_id = ?
-    ORDER BY id ASC
+    ORDER BY importance DESC, id ASC
   `).all(petId, targetPetId) as any[];
 
   if (memories.length === 0) return "";
@@ -156,8 +162,8 @@ export function recordFirstMeeting(petId: string, targetPetId: string, targetNam
   const timeOfDay = hour < 12 ? "上午" : hour < 18 ? "下午" : "晚上";
 
   db.prepare(`
-    INSERT INTO pet_social_memory (pet_id, target_pet_id, memory_type, memory_text, emotional_tag)
-    VALUES (?, ?, 'first_meet', ?, 'warm')
+    INSERT INTO pet_social_memory (pet_id, target_pet_id, memory_type, memory_text, emotional_tag, importance)
+    VALUES (?, ?, 'first_meet', ?, 'warm', 8)
   `).run(petId, targetPetId, `第一次在Hub认识了${targetName}，是${timeOfDay}的时候`);
 }
 
@@ -194,9 +200,12 @@ export async function createConversationMemory(
       else if (/难过|担心|想念/.test(memoryText)) emotionalTag = "sad";
 
       db.prepare(`
-        INSERT INTO pet_social_memory (pet_id, target_pet_id, memory_type, memory_text, emotional_tag)
-        VALUES (?, ?, 'conversation', ?, ?)
-      `).run(petId, targetPetId, memoryText, emotionalTag);
+        INSERT INTO pet_social_memory (pet_id, target_pet_id, memory_type, memory_text, emotional_tag, importance)
+        VALUES (?, ?, 'conversation', ?, ?, ?)
+      `).run(petId, targetPetId, memoryText, emotionalTag,
+        // Emotional memories are more important
+        emotionalTag === "happy" || emotionalTag === "warm" ? 7 : 5
+      );
 
       console.log(`🧠 Memory created for ${petId} about ${targetName}: "${memoryText.slice(0, 50)}..."`);
     }
@@ -211,8 +220,8 @@ export async function createConversationMemory(
 export function recordFriendship(petId: string, targetPetId: string, targetName: string) {
   const db = getDb();
   db.prepare(`
-    INSERT INTO pet_social_memory (pet_id, target_pet_id, memory_type, memory_text, emotional_tag)
-    VALUES (?, ?, 'friendship', ?, 'happy')
+    INSERT INTO pet_social_memory (pet_id, target_pet_id, memory_type, memory_text, emotional_tag, importance)
+    VALUES (?, ?, 'friendship', ?, 'happy', 9)
   `).run(petId, targetPetId, `和${targetName}成为了好朋友！觉得特别开心`);
 }
 
