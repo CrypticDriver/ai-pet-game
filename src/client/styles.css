@@ -789,3 +789,64 @@
   color: var(--accent);
   cursor: pointer;
 }
+
+/* ---- Plaza Landscape Mode ---- */
+
+.plaza-landscape {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.plaza-landscape .plaza-header {
+  padding: 4px 12px;
+  font-size: 11px;
+}
+
+.plaza-landscape .plaza-canvas-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.plaza-landscape .plaza-canvas-wrap canvas {
+  max-height: calc(100vh - 120px);
+  width: auto !important;
+}
+
+.plaza-landscape .plaza-interact {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.plaza-landscape .plaza-emotes {
+  padding: 4px 0;
+}
+
+@media (orientation: landscape) {
+  .plaza-view {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    background: var(--bg);
+  }
+
+  .plaza-view .plaza-canvas-wrap canvas {
+    max-width: 100%;
+    max-height: calc(100vh - 100px);
+  }
+}

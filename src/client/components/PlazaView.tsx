@@ -7,8 +7,11 @@ import type { PetExpression } from "../../shared/types.js";
 import { EXPRESSION_SVG_PATH, getExpressionFromStats } from "../../shared/types.js";
 import { renderPlazaBackground } from "../engine/plazaBackground.js";
 
-const WIDTH = 360;
-const HEIGHT = 280;
+// Landscape dimensions for wider plaza view
+const LANDSCAPE_WIDTH = 560;
+const LANDSCAPE_HEIGHT = 280;
+const PORTRAIT_WIDTH = 360;
+const PORTRAIT_HEIGHT = 280;
 
 interface PlazaPetInfo {
   petId: string;
@@ -42,10 +45,55 @@ export function PlazaView({ petId, petName, onShowToast }: Props) {
   const [connected, setConnected] = useState(false);
   const [selectedPet, setSelectedPet] = useState<PlazaPetInfo | null>(null);
   const [chatBubbles, setChatBubbles] = useState<ChatBubble[]>([]);
+  const [isLandscape, setIsLandscape] = useState(false);
   const petsRef = useRef<PlazaPetInfo[]>([]);
   const bubblesRef = useRef<ChatBubble[]>([]);
   const spriteCache = useRef<Map<string, HTMLImageElement>>(new Map());
   const rafRef = useRef<number>(0);
+
+  const WIDTH = isLandscape ? LANDSCAPE_WIDTH : PORTRAIT_WIDTH;
+  const HEIGHT = isLandscape ? LANDSCAPE_HEIGHT : PORTRAIT_HEIGHT;
+
+  // Auto-landscape on mount, restore on unmount
+  useEffect(() => {
+    let lockRef: any = null;
+
+    async function enterLandscape() {
+      try {
+        // Try Screen Orientation API (works on mobile Chrome/Firefox)
+        const orientation = (screen as any).orientation;
+        if (orientation?.lock) {
+          await orientation.lock("landscape");
+          lockRef = orientation;
+          setIsLandscape(true);
+          return;
+        }
+      } catch { /* not supported or denied */ }
+
+      // Fallback: detect current orientation
+      const isWide = window.innerWidth > window.innerHeight;
+      setIsLandscape(isWide);
+    }
+
+    function handleResize() {
+      const isWide = window.innerWidth > window.innerHeight;
+      setIsLandscape(isWide);
+    }
+
+    enterLandscape();
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+      // Unlock orientation on leave
+      try {
+        const orientation = (screen as any).orientation;
+        if (orientation?.unlock) orientation.unlock();
+      } catch { /* ignore */ }
+    };
+  }, []);
 
   // Keep refs in sync
   useEffect(() => { petsRef.current = pets; }, [pets]);
@@ -254,7 +302,7 @@ export function PlazaView({ petId, petName, onShowToast }: Props) {
 
     rafRef.current = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [petId, getSprite]);
+  }, [petId, getSprite, WIDTH, HEIGHT]);
 
   // Handle canvas click — move or select pet
   const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -304,7 +352,7 @@ export function PlazaView({ petId, petName, onShowToast }: Props) {
   };
 
   return (
-    <div className="plaza-view">
+    <div className={`plaza-view ${isLandscape ? "plaza-landscape" : ""}`}>
       <div className="plaza-header">
         <span>🏞️ 广场</span>
         <span className="plaza-online">{pets.length} 只宠物在线</span>
@@ -314,7 +362,7 @@ export function PlazaView({ petId, petName, onShowToast }: Props) {
       <div className="plaza-canvas-wrap">
         <canvas
           ref={canvasRef}
-          style={{ width: WIDTH, height: HEIGHT, borderRadius: "var(--radius-md)", cursor: "pointer" }}
+          style={{ width: "100%", maxWidth: WIDTH, height: HEIGHT, borderRadius: "var(--radius-md)", cursor: "pointer" }}
           onClick={handleClick}
         />
       </div>
