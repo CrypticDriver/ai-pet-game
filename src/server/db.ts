@@ -128,6 +128,9 @@ export function getOrCreatePet(userId: string, petName = "Pixel") {
   // Give user the default skin
   db.prepare("INSERT OR IGNORE INTO user_items (user_id, item_id) VALUES (?, 'skin-default')").run(userId);
 
+  // Auto-create wallet
+  db.prepare("INSERT OR IGNORE INTO pet_wallets (pet_id) VALUES (?)").run(petId);
+
   return db.prepare("SELECT * FROM pets WHERE id = ?").get(petId);
 }
 

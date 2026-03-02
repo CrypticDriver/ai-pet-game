@@ -85,7 +85,7 @@ export async function detectNewTerms(
   }
 
   // Common words filter
-  const commonWords = new Set(["你好","谢谢","是的","对呀","没有","可以","什么","怎么","为什么","当然","真的","好的","不是","我们","你们","他们","这里","那里","一起","开心","有趣","喜欢"]);
+  const commonWords = new Set(["你好","谢谢","是的","对呀","没有","可以","什么","怎么","为什么","当然","真的","好的","不是","我们","你们","他们","这里","那里","一起","开心","有趣","喜欢","新词叫","一个新","叫做","发明了","大家好"]);
 
   for (const candidate of candidates) {
     if (candidate.length < 2 || candidate.length > 10) continue;

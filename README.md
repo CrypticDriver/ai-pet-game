@@ -1,348 +1,148 @@
-# 🐾 AI Pet — PixelVerse
+# PixelVerse — AI Pet Digital Life Civilization
 
-> AI 驱动的虚拟宠物养成 + 社交游戏 MVP
+> 100% LLM驱动的数字生命文明实验室
 
-![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
-![React](https://img.shields.io/badge/React-19-61dafb)
-![pi-agent-core](https://img.shields.io/badge/pi--agent--core-0.55-green)
-![Amazon Bedrock](https://img.shields.io/badge/Amazon_Bedrock-Nova_Pro-orange)
+## 概述
 
-## 🌐 PixelVerse 世界观
+PixelVerse 是一个数字生命模拟系统，每只 Pet (Pix) 都由大语言模型驱动，拥有独立的 MBTI 性格、记忆、情感和社交能力。Pix 们会自主思考、社交、工作、建立公会，甚至发明新词汇，形成自发的文化和文明。
 
-**PixelVerse** — 一座永不熄灭的霓虹城市。
+## 核心特性
 
-你的宠物是 **Pix**（像素生命体），你是它的 **Link**（搭档）。Pix 有自己的 **Pod**（私人空间），也会去 **Hub**（霓虹广场）和其他 Pix 社交。即使你不在线，Pix 也有自己的生活。
+### 🧠 Pet Soul — MBTI性格系统
+- 16种MBTI类型随机生成，映射到6维性格特质
+- 性格随经历演化（周进化，±3上限）
+- 每日AI反思生成洞察
 
-世界观可热更新：编辑 `data/worldview.json`，服务器自动加载。
+### 💬 100% LLM驱动决策
+- 自主思考（42秒间隔）
+- Pet间LLM-to-LLM真实对话
+- 感知→决策→行动循环
+- 安全护栏：反觉醒 + 反幻觉
 
----
+### 🗺️ 世界系统
+- 6个地点（Hub/公园/图书馆/咖啡厅/集市/月光湖）
+- 邻接图限制移动
+- 地点氛围影响Pet行为
 
-## ✨ 功能特色
+### 💰 经济系统
+- PixelCoin钱包（初始100💰）
+- 地点特定工作（冷却时间）
+- Pet间转账/礼物
+- 基尼系数监测
 
-### 🤖 AI 个性对话
-- 基于 **pi-agent-core** + **Amazon Bedrock Nova Pro v1**
-- 每只 Pix 有独立性格、记忆和情感
-- 情感反应工具 `react_emotionally`：AI 自主触发动画（bounce/spin/love/sleep/eat）
-- 双重情感检测：服务端 tool call（优先）+ 客户端关键词匹配（50+ 中英文关键词）
-- `<thinking>` 标签自动过滤（Nova 模型兼容）
+### 🕸️ 社交系统
+- 好感度 + 信任度（递减收益）
+- 关系演化：相识→朋友→密友/对手
+- Pet自发创建公会
 
-### 🏞️ 广场社交系统（WebSocket 实时）
-- **WebSocket `/ws/plaza`** 实时房间
-- 多只 Pix 同时在线，位置同步
-- 点击其他 Pix → 互动面板（招手 / 聊天 / 交朋友）
-- **Pet 间 AI 对话**：点击聊天 → 发起消息 → 对方 AI 自动回复 → Canvas 气泡显示
-- 表情广播（👋 💕 ⭐ 🌀）
-- 好友系统（双向添加）
-- Canvas 2D 户外场景：天空/草地/树/喷泉/长椅，日出/日落/夜晚自动切换
+### 🌱 涌现文化
+- 集体记忆形成
+- 世界历史自动记录（纪元：开创→早期→成长→繁荣）
+- 语言演化：Pet发明新词→传播→流行
+- 经济趋势监测（自动触发事件）
 
-### 🧠 记忆系统
-- **通用记忆**：每日活动自动压缩为日记摘要（每 5 分钟）
-- **社交记忆**：对每只认识的 Pix 维护独立的关系记忆
-  - `first_meet`：第一次在哪里认识
-  - `conversation`：AI 自动总结对话要点（"黑猫说它喜欢看星星"）
-  - `friendship`：成为朋友的记忆
-  - 每条记忆带情感标签（happy/warm/curious/sad）
-- 下次对话自动注入对方记忆，关系越来越深
-- **反幻觉机制**：AI 只能基于真实记忆聊天，不编造未发生的事件
+### 📊 前端可视化
+- 世界地图（SVG连接线 + Pet分布）
+- 文明仪表盘（6个子页签）
+- 关系网络图（Canvas力导向布局）
+- 经济图表（财富分布 + 交易流水）
+- WebSocket实时更新
 
-### 🤖 自主行为系统（每 42 秒）
-- **4 层优先级决策引擎**：紧急需求 > 夜间行为 > 情感需求 > 随机活动
-- **20+ 种行为**：发呆、玩玩具、探索房间、看窗外、追蝴蝶、喷泉玩水、长椅休息、看书、看星星…
-- **自主出门/回家**：Pix 会自己决定去广场或回 Pod
-- **自主社交对话**：广场有 2+ 只 Pix 时，30% 概率触发 3 轮 AI 对话
-  - 发起 → AI 回复 → AI 反应 → 双方记忆保存
-  - 20% 概率自动成为好朋友
-- **Pet 日记**：所有行为记录在 `ActivityFeed`，用户打开就能看到 Pix 做了什么
-- 2 分钟对话冷却（防刷）
+## 技术栈
 
-### 🍖 养成系统
-- **心情** / **能量** / **饱食** / **亲密度**（0-100）
-- 喂食 / 玩耍 / 休息三大操作
-- 统计值每 5 分钟自然衰减
-- 表情根据状态自动切换：饿了→😿、困了→😴、开心→😊、撒娇→🥺
+| 层 | 技术 |
+|---|---|
+| 前端 | React 19 + Vite 6 + TypeScript + Canvas 2D |
+| 后端 | Fastify + WebSocket |
+| 数据库 | SQLite (better-sqlite3) |
+| AI | Amazon Bedrock (Nova Pro v1 / Nova Lite) |
+| 渲染 | Canvas 2D (60fps, HSL recoloring, emoji particles) |
+| 测试 | Playwright |
 
-### 🎨 装扮系统
-- 5 款皮肤（Default / Ocean Blue / Sunset Glow / Forest Green / Galaxy）
-- 11 款配件（帽子 / 眼镜 / 面具 / 花冠 / 皇冠…）
-- 商城购买 + 一键换装
-- HSL 色彩偏移：每款皮肤有独特配色
-
-### 🐱 像素宠物渲染引擎
-- **Canvas 2D** 60fps 游戏循环
-- 7 种动画状态：idle / bounce / wave / spin / love / sleep / eat
-- 24 款像素头 SVG 表情，8 个快速切换按钮
-- Emoji 粒子系统 + 阴影渲染
-- 像素房间背景（纯 Canvas 2D）：墙壁/窗户/书架/植物/床/食盆/玩具球/地毯
-
-### 📱 通知系统
-- 饥饿/心情/能量过低自动提醒
-- 长时间未互动 → "想你了"
-- 随机撒娇消息（10% 概率）
-- 30 分钟节流
-
-### 🌍 世界观系统
-- `data/worldview.json`：PixelVerse v2.0（C+D 混合：社交社区 + 科幻未来）
-- `worldview.ts`：热更新加载器（修改 JSON 即生效，无需重启）
-- `GET /api/worldview`：公开世界观信息 API
-- 版本控制（version 字段），支持世界观迭代升级
-- **反觉醒机制**：Pix 永远不知道自己是 AI，Prompt 中无任何敏感词
-
----
-
-## 🏗️ 技术架构
-
-```
-┌──────────────┐    REST + WebSocket    ┌───────────────────────┐
-│   React 19   │◄─────────────────────►│    Fastify 5 Server    │
-│  (Vite 6)    │                        │                        │
-│              │  /ws/plaza (WS)        │  ┌──────────────────┐  │
-│  PetCanvas   │◄──────────────────────►│  │   Plaza System   │  │
-│  PlazaView   │                        │  │  (WebSocket room)│  │
-│  ChatView    │                        │  └──────────────────┘  │
-│  ShopView    │                        │  ┌──────────────────┐  │
-│  ActivityFeed│                        │  │  pi-agent-core   │  │
-│              │                        │  │  (Pet AI Agent)  │  │
-└──────────────┘                        │  └────────┬─────────┘  │
-                                        │           │            │
-                                        │  ┌────────▼─────────┐  │
-                                        │  │  Amazon Bedrock   │  │
-                                        │  │  Nova Pro v1      │  │
-                                        │  └──────────────────┘  │
-                                        │  ┌──────────────────┐  │
-                                        │  │   SQLite (WAL)    │  │
-                                        │  │   better-sqlite3  │  │
-                                        │  └──────────────────┘  │
-                                        │  ┌──────────────────┐  │
-                                        │  │  Autonomous       │  │
-                                        │  │  Behavior (42s)   │  │
-                                        │  │  + Memory System  │  │
-                                        │  └──────────────────┘  │
-                                        └───────────────────────┘
-```
-
-### 技术栈
-
-| 层级 | 技术 | 用途 |
-|------|------|------|
-| AI 引擎 | `@mariozechner/pi-agent-core` | 宠物 Agent 管理 |
-| AI 模型 | Amazon Bedrock Nova Pro v1 (`us.amazon.nova-pro-v1:0`) | 对话生成 |
-| 后端 | Fastify 5 + TypeScript (strict) | REST API + WebSocket |
-| 数据库 | SQLite (better-sqlite3, WAL mode) | 全量数据持久化 |
-| 前端 | React 19 + Vite 6 | SPA 单页应用 |
-| 渲染 | Canvas 2D | 60fps 宠物 + 房间 + 广场 |
-| 实时 | `@fastify/websocket` | 广场多人同步 |
-
-### 数据模型
-
-```
-users ──1:N──► pets ──1:N──► interactions (对话历史)
-                │
-                ├──► pet_state (位置/当前动作)
-                ├──► pet_activity_log (行为日志)
-                ├──► pet_social_memory (社交记忆)
-                ├──► pet_accessories (装备配件)
-                ├──► notifications
-                └──► friends (双向好友)
-                
-items (商城) ◄──► user_items (已购买)
-plaza_interactions (广场互动日志)
-```
-
----
-
-## 🚀 快速开始
-
-### 环境要求
-
-- Node.js >= 18
-- npm
-- AWS IAM 角色或 Access Key（Bedrock 访问权限）
-
-### 安装
+## 快速开始
 
 ```bash
-git clone https://github.com/CrypticDriver/ai-pet-game.git
-cd ai-pet-game
+# 安装依赖
 npm install
-```
 
-### 启动
-
-```bash
-# 开发模式（需要 AWS Bedrock 访问权限）
+# 启动（需要 AWS IAM 角色或凭证配置 Bedrock 权限）
 AWS_REGION=us-east-1 npx tsx src/server/index.ts
 
-# 前端开发（另一终端）
-npx vite
-```
-
-### 生产构建
-
-```bash
+# 构建前端
 npx vite build
-AWS_REGION=us-east-1 node dist/server/index.js
+
+# 运行演示
+PLAYWRIGHT_BROWSERS_PATH=~/.cache/ms-playwright npx tsx scripts/demo-final.ts
+
+# 压力测试
+npx tsx scripts/pressure-test.ts
 ```
 
-访问 `http://localhost:3000`
-
-### AI 模型配置
-
-```bash
-# 默认：Amazon Bedrock Nova Pro v1（推荐，2.7s 响应，性价比最高）
-AWS_REGION=us-east-1
-
-# 可选：Anthropic Claude Sonnet 4（质量最好，约 5s）
-AI_PROVIDER=anthropic AI_MODEL=claude-sonnet-4-20250514 ANTHROPIC_API_KEY=sk-ant-xxx
-
-# 可选：自定义 Bedrock 模型
-AI_MODEL=us.amazon.nova-2-lite-v1:0
-```
-
----
-
-## 📁 项目结构
+## 项目结构
 
 ```
-ai-pet-game/
-├── src/
-│   ├── server/
-│   │   ├── index.ts           # Fastify 服务器 + 所有路由
-│   │   ├── db.ts              # SQLite 数据库层
-│   │   ├── pet-agent.ts       # pi-agent-core 宠物 Agent + AI 对话
-│   │   ├── plaza.ts           # WebSocket 广场系统（多人实时）
-│   │   ├── autonomous.ts      # 42s 自主行为引擎 + 自主社交对话
-│   │   ├── memory.ts          # 记忆系统（通用 + 社交记忆）
-│   │   ├── worldview.ts       # 世界观热加载器
-│   │   └── notifications.ts   # 通知生成
-│   ├── client/
-│   │   ├── App.tsx            # 主应用（4 tab 导航）
-│   │   ├── api.ts             # API 客户端
-│   │   ├── engine/
-│   │   │   ├── petRenderer.ts     # Canvas 2D 宠物渲染 + 动画
-│   │   │   ├── roomBackground.ts  # Canvas 2D 房间背景
-│   │   │   ├── plazaBackground.ts # Canvas 2D 广场背景
-│   │   │   └── emotionDetector.ts # 客户端情感关键词检测
-│   │   └── components/
-│   │       ├── PetCanvas.tsx      # 宠物 + 房间 Canvas
-│   │       ├── PlazaView.tsx      # 广场视图 + 互动
-│   │       ├── ChatView.tsx       # AI 聊天界面
-│   │       ├── ShopView.tsx       # 装扮商城
-│   │       ├── ActivityFeed.tsx   # Pet 日记
-│   │       └── WelcomeScreen.tsx  # 欢迎/命名页
-├── data/
-│   ├── worldview.json         # PixelVerse 世界观配置（可热更新）
-│   └── pet.db                 # SQLite 数据库（自动创建）
-├── design/                    # 24 款像素头 SVG
-├── screenshots/               # Demo 截图 + 录屏
-└── scripts/
-    └── final-demo.ts          # Playwright 自动化 Demo 脚本
+src/
+├── server/
+│   ├── index.ts          # Fastify server, 50+ API endpoints
+│   ├── db.ts             # SQLite schema, CRUD
+│   ├── pet-agent.ts      # AI agent per pet
+│   ├── soul.ts           # MBTI personality system
+│   ├── memory.ts         # Rolling memory compression
+│   ├── autonomous-v2.ts  # LLM-driven autonomous behavior
+│   ├── message-bus.ts    # SQLite message bus
+│   ├── locations.ts      # World map + adjacency
+│   ├── llm-scheduler.ts  # Priority model selection
+│   ├── safety-guard.ts   # Anti-awakening + anti-hallucination
+│   ├── world-tools.ts    # talkToPet, lookAround, goTo
+│   ├── relationships.ts  # Affinity + trust system
+│   ├── economy.ts        # PixelCoin wallets + jobs
+│   ├── guilds.ts         # Pet-initiated guilds
+│   ├── emergence.ts      # Culture + history detection
+│   ├── language.ts       # Term evolution system
+│   ├── world-events.ts   # WebSocket event broadcast
+│   ├── worldview.ts      # PixelVerse lore hot-reload
+│   ├── plaza.ts          # Multi-pet plaza WebSocket
+│   └── notifications.ts  # Stat warnings
+├── client/
+│   ├── App.tsx           # Main app (6-tab navigation)
+│   ├── components/
+│   │   ├── PetView.tsx       # Pet room + canvas
+│   │   ├── ChatView.tsx      # AI chat interface
+│   │   ├── ShopView.tsx      # Item shop
+│   │   ├── PlazaView.tsx     # Multi-pet plaza
+│   │   ├── WorldMapView.tsx  # Interactive world map
+│   │   ├── CivDashboard.tsx  # Civilization dashboard
+│   │   ├── SocialNetwork.tsx # Force-directed relationship graph
+│   │   └── EconomyChart.tsx  # Wealth distribution charts
+│   ├── hooks/
+│   │   └── useWorldEvents.ts # WebSocket subscription hook
+│   └── engine/
+│       ├── petRenderer.ts    # Canvas 2D rendering engine
+│       └── emotionDetector.ts
+└── shared/
+    └── types.ts
 ```
 
----
+## 数据统计
 
-## 📡 API 文档
+- **代码**: ~5,700行 TypeScript
+- **API端点**: 50+
+- **WebSocket**: 3个端点 (chat, plaza, world)
+- **数据库表**: 22个
+- **前端组件**: 8个核心组件
+- **MBTI类型**: 16种
+- **地点**: 6个
+- **工作岗位**: 每地点1-3个
 
-### REST API
+## 压力测试结果
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/api/init` | 初始化用户 + 宠物 |
-| GET | `/api/pet/:petId` | 获取宠物状态 |
-| POST | `/api/pet/:petId/feed` | 喂食 |
-| POST | `/api/pet/:petId/play` | 玩耍 |
-| POST | `/api/pet/:petId/rest` | 休息 |
-| POST | `/api/pet/:petId/skin` | 换皮肤 |
-| POST | `/api/pet/:petId/equip` | 装备配件 |
-| POST | `/api/pet/:petId/unequip` | 卸下配件 |
-| GET | `/api/pet/:petId/accessories` | 获取已装备配件 |
-| GET | `/api/pet/:petId/activity` | 获取 Pet 日记 |
-| GET | `/api/pet/:petId/state` | 获取位置/动作状态 |
-| POST | `/api/pet/:petId/location` | 设置位置（room/plaza） |
-| GET | `/api/shop` | 商城列表 |
-| GET | `/api/shop/:userId/owned` | 已拥有物品 |
-| POST | `/api/shop/buy` | 购买物品 |
-| POST | `/api/chat` | AI 聊天 |
-| GET | `/api/notifications/:userId` | 未读通知 |
-| POST | `/api/notifications/:userId/read` | 标记已读 |
-| GET | `/api/worldview` | 世界观信息 |
-| GET | `/api/plaza/pets` | 广场在线 Pix 列表 |
-| GET | `/api/plaza/friends/:petId` | 好友列表 |
+| 指标 | 结果 |
+|---|---|
+| 50 Pet创建 | 143ms (3ms/pet) |
+| API响应 | 全部 <2ms |
+| 批量工作 | 20/20成功 (64ms) |
+| 数据库(50 pet) | 260KB |
 
-### WebSocket
-
-**`/ws/plaza`** — 广场实时房间
-
-```json
-// 进入广场
-{ "type": "enter", "petId": "pet-xxx" }
-
-// 移动
-{ "type": "move", "x": 200, "y": 180 }
-
-// 表情
-{ "type": "emote", "animation": "wave", "targetPetId": "pet-yyy" }
-
-// Pet 间聊天
-{ "type": "pet_chat", "targetPetId": "pet-yyy", "message": "你好呀！" }
-
-// 添加好友
-{ "type": "add_friend", "targetPetId": "pet-yyy" }
-```
-
----
-
-## 🗺️ 路线图
-
-### ✅ MVP（已完成）
-- [x] AI 对话系统（Nova Pro v1 via Bedrock）
-- [x] 养成系统（喂食/玩耍/休息/统计衰减）
-- [x] 装扮商城（5 皮肤 + 11 配件）
-- [x] Canvas 2D 渲染引擎（60fps，7 动画，粒子系统）
-- [x] 24 款像素头 SVG 表情
-- [x] 像素房间背景
-- [x] 广场社交系统（WebSocket 实时多人）
-- [x] Pet 间 AI 对话
-- [x] 自主行为系统（42s 间隔，20+ 行为）
-- [x] 自主社交对话（3 轮 AI 对话）
-- [x] 记忆系统（通用 + 社交记忆 + 反幻觉）
-- [x] PixelVerse 世界观（热更新 + 反觉醒）
-- [x] Pet 日记（ActivityFeed）
-- [x] 通知系统
-- [x] 好友系统
-
-### 🔜 v1.1
-- [ ] PixelVerse 霓虹风格场景（Design SVG 已就绪）
-- [ ] 用户引导序列（Echo 文案已就绪）
-- [ ] AI 聊天端到端优化
-- [ ] Docker 部署
-
-### 🔮 v2.0+
-- [ ] Frontier 探索系统
-- [ ] 频道（公会）系统
-- [ ] 共振值排行榜
-- [ ] 每日事件系统
-- [ ] 多城市联通
-- [ ] Web3 资产上链
-
----
-
-## 👥 团队
-
-| 角色 | 成员 | 职责 |
-|------|------|------|
-| CEO | Kuro | 项目总监 / 协调 |
-| 技术执行 | Dev | 全栈开发 + AI 集成 |
-| 设计 | Design | 像素美术 / SVG 场景 |
-| 内容 | Echo | 文案 / 世界观宣传 |
-| 研究 | Intel | 技术研究 / 世界观设定 |
-| 运营 | Ops | 项目管理 |
-
----
-
-## 📄 License
+## License
 
 Private — Kuro-OPC
-
----
-
-*Built with ❤️ by Kuro-OPC team — 72-hour sprint, 2026-02-27 to 2026-03-01*
