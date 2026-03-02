@@ -13,6 +13,7 @@ import { think } from "./llm-scheduler.js";
 import { safetyFilter } from "./safety-guard.js";
 import { createLocationEvent } from "./locations.js";
 import { listGuilds, createGuild } from "./guilds.js";
+import { broadcastWorldEvent } from "./world-events.js";
 
 // ── Schema ──
 
@@ -317,6 +318,7 @@ export function recordWorldEvent(
     INSERT INTO world_history (era, event_type, title, description, participant_pet_ids, location_id)
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(era, eventType, title, description, JSON.stringify(participantPetIds), locationId || null);
+  broadcastWorldEvent("world_history", { era, eventType, title, description });
 }
 
 function determineEra(): string {

@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { SocialNetwork } from "./SocialNetwork.js";
 import { EconomyChart } from "./EconomyChart.js";
-const fetchApi = (method: string, url: string) => fetch(url, { method }).then(r => r.json());
+import { useWorldEvents } from "../hooks/useWorldEvents.js";
+const fetchApi = (url: string) => fetch(url).then(r => r.json());
 
 export function CivDashboard() {
   const [emergence, setEmergence] = useState<any>(null);
@@ -13,15 +14,24 @@ export function CivDashboard() {
   const [guilds, setGuilds] = useState<any[]>([]);
   const [tab, setTab] = useState<"overview" | "history" | "culture" | "language" | "social" | "economy">("overview");
 
-  useEffect(() => {
-    fetchApi("GET", "/api/world/emergence").then(setEmergence);
-    fetchApi("GET", "/api/world/economy").then(setEconomy);
-    fetchApi("GET", "/api/world/language").then(setLanguage);
-    fetchApi("GET", "/api/world/language/terms").then(setTerms);
-    fetchApi("GET", "/api/world/history?limit=20").then(setHistory);
-    fetchApi("GET", "/api/world/culture").then(setCulture);
-    fetchApi("GET", "/api/guilds").then(setGuilds);
+  const loadAll = useCallback(() => {
+    fetchApi("/api/world/emergence").then(setEmergence);
+    fetchApi("/api/world/economy").then(setEconomy);
+    fetchApi("/api/world/language").then(setLanguage);
+    fetchApi("/api/world/language/terms").then(setTerms);
+    fetchApi("/api/world/history?limit=20").then(setHistory);
+    fetchApi("/api/world/culture").then(setCulture);
+    fetchApi("/api/guilds").then(setGuilds);
   }, []);
+
+  useEffect(() => { loadAll(); }, [loadAll]);
+
+  // Auto-refresh on world events
+  useWorldEvents((event) => {
+    if (["economy", "pet_worked", "relationship", "language", "world_history", "guild", "emergence"].includes(event.type)) {
+      loadAll();
+    }
+  });
 
   const tabStyle = (t: string) => ({
     padding: "6px 12px", borderRadius: 16, fontSize: 12, cursor: "pointer",

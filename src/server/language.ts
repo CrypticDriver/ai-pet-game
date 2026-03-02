@@ -7,6 +7,7 @@
 
 import { getDb, getPet } from "./db.js";
 import { recordWorldEvent } from "./emergence.js";
+import { broadcastWorldEvent } from "./world-events.js";
 
 // ── Schema ──
 
@@ -103,6 +104,7 @@ export async function detectNewTerms(
 
     newTerms.push(candidate);
     console.log(`📝 New term: "${candidate}" = ${meaning} (by ${petName})`);
+    broadcastWorldEvent("language", { action: "new_term", term: candidate, meaning, petName });
   }
 
   return { detected: newTerms.length > 0, terms: newTerms };
@@ -164,6 +166,7 @@ function recordTermUsage(term: string, petId: string) {
       users
     );
     console.log(`📝 Term "${term}" is now POPULAR! Used by ${users.length} pets`);
+    broadcastWorldEvent("language", { action: "term_popular", term, users: users.length });
   }
 }
 

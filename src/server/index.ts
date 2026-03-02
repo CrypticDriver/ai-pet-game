@@ -36,6 +36,7 @@ import {
   removeFriend,
   handlePlazaSocket,
 } from "./plaza.js";
+import { addWorldClient, broadcastWorldEvent } from "./world-events.js";
 import {
   initAutonomousSchema,
   executeAutonomousBehavior,
@@ -312,7 +313,12 @@ app.get("/api/world/map", async () => {
 app.post<{ Params: { petId: string }; Body: { destination: string } }>(
   "/api/pet/:petId/move",
   async (req) => {
-    return movePet(req.params.petId, req.body.destination);
+    const result = await movePet(req.params.petId, req.body.destination);
+    if ((result as any).ok) {
+      const pet = getPet(req.params.petId);
+      broadcastWorldEvent("pet_moved", { petId: req.params.petId, petName: pet?.name, destination: req.body.destination });
+    }
+    return result;
   }
 );
 
@@ -394,7 +400,12 @@ app.get<{ Params: { petId: string } }>("/api/pet/:petId/work", async (req) => {
 app.post<{ Params: { petId: string }; Body: { job: string } }>(
   "/api/pet/:petId/work",
   async (req) => {
-    return doWork(req.params.petId, req.body.job);
+    const result = await doWork(req.params.petId, req.body.job);
+    if ((result as any).ok) {
+      const pet = getPet(req.params.petId);
+      broadcastWorldEvent("pet_worked", { petId: req.params.petId, petName: pet?.name, job: req.body.job, pay: (result as any).pay, balance: (result as any).balance });
+    }
+    return result;
   }
 );
 
@@ -481,7 +492,11 @@ app.get<{ Params: { petId: string } }>("/api/pet/:petId/guild", async (req) => {
 app.post<{ Body: { name: string; description: string; founderPetId: string; territory?: string } }>(
   "/api/guild/create",
   async (req) => {
-    return createGuild(req.body.name, req.body.description, req.body.founderPetId, req.body.territory);
+    const result = await createGuild(req.body.name, req.body.description, req.body.founderPetId, req.body.territory);
+    if ((result as any).ok) {
+      broadcastWorldEvent("guild", { action: "created", name: req.body.name, founder: req.body.founderPetId });
+    }
+    return result;
   }
 );
 
@@ -602,6 +617,10 @@ app.register(async function (fastify) {
   // Plaza WebSocket
   fastify.get("/ws/plaza", { websocket: true }, (socket, req) => {
     handlePlazaSocket(socket);
+  });
+  // World events WebSocket (real-time updates for map/dashboard)
+  fastify.get("/ws/world", { websocket: true }, (socket, req) => {
+    addWorldClient(socket);
   });
 });
 

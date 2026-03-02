@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
-const fetchApi = (method: string, url: string) => fetch(url, { method }).then(r => r.json());
+import { useState, useEffect, useCallback } from "react";
+import { useWorldEvents } from "../hooks/useWorldEvents.js";
+
+const fetchApi = (url: string) => fetch(url).then(r => r.json());
 
 interface LocationData {
   id: string;
@@ -26,13 +28,18 @@ export function WorldMapView() {
   const [selected, setSelected] = useState<LocationData | null>(null);
   const [pets, setPets] = useState<any[]>([]);
 
-  useEffect(() => {
-    fetchApi("GET", "/api/world/map").then(setLocations);
-  }, []);
+  const loadMap = useCallback(() => { fetchApi("/api/world/map").then(setLocations); }, []);
+
+  useEffect(() => { loadMap(); }, [loadMap]);
+
+  // Auto-refresh on world events
+  useWorldEvents((event) => {
+    if (event.type === "pet_moved" || event.type === "pet_action") loadMap();
+  });
 
   useEffect(() => {
     if (selected) {
-      fetchApi("GET", `/api/world/location/${selected.id}`).then(d => setPets(d.pets || []));
+      fetchApi(`/api/world/location/${selected.id}`).then((d: any) => setPets(d.pets || []));
     }
   }, [selected]);
 
