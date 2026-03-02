@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { SocialNetwork } from "./SocialNetwork.js";
+import { EconomyChart } from "./EconomyChart.js";
 const fetchApi = (method: string, url: string) => fetch(url, { method }).then(r => r.json());
 
 export function CivDashboard() {
@@ -9,7 +11,7 @@ export function CivDashboard() {
   const [history, setHistory] = useState<any[]>([]);
   const [culture, setCulture] = useState<any[]>([]);
   const [guilds, setGuilds] = useState<any[]>([]);
-  const [tab, setTab] = useState<"overview" | "history" | "culture" | "language">("overview");
+  const [tab, setTab] = useState<"overview" | "history" | "culture" | "language" | "social" | "economy">("overview");
 
   useEffect(() => {
     fetchApi("GET", "/api/world/emergence").then(setEmergence);
@@ -65,6 +67,8 @@ export function CivDashboard() {
         <span style={tabStyle("history")} onClick={() => setTab("history")}>📜 历史</span>
         <span style={tabStyle("culture")} onClick={() => setTab("culture")}>🎭 文化</span>
         <span style={tabStyle("language")} onClick={() => setTab("language")}>📝 语言</span>
+        <span style={tabStyle("social")} onClick={() => setTab("social")}>🕸️ 关系</span>
+        <span style={tabStyle("economy")} onClick={() => setTab("economy")}>💰 经济</span>
       </div>
 
       {/* Content */}
@@ -140,6 +144,9 @@ export function CivDashboard() {
           ))}
         </Section>
       )}
+
+      {tab === "social" && <SocialNetwork />}
+      {tab === "economy" && <EconomyChart />}
     </div>
   );
 }

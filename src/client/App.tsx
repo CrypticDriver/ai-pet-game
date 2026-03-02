@@ -8,6 +8,8 @@ import { WelcomeScreen } from "./components/WelcomeScreen.js";
 import { PlazaView } from "./components/PlazaView.js";
 import { WorldMapView } from "./components/WorldMapView.js";
 import { CivDashboard } from "./components/CivDashboard.js";
+import { SocialNetwork } from "./components/SocialNetwork.js";
+import { EconomyChart } from "./components/EconomyChart.js";
 import { detectEmotionFromText, parseServerAnimations } from "./engine/emotionDetector.js";
 import type { PetAnimState } from "./engine/petRenderer.js";
 

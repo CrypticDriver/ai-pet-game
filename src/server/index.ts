@@ -9,6 +9,7 @@ import {
   getOrCreateUser,
   getOrCreatePet,
   getPet,
+  getDb,
   updatePetStats,
   updatePetSkin,
   getShopItems,
@@ -410,6 +411,55 @@ app.get<{ Params: { petId: string } }>("/api/pet/:petId/transactions", async (re
 
 app.get("/api/world/economy", async () => {
   return getEconomyStats();
+});
+
+app.get("/api/world/economy/wallets", async () => {
+  const db = getDb();
+  const rows = db.prepare(`
+    SELECT w.pet_id, p.name as pet_name, w.balance
+    FROM pet_wallets w JOIN pets p ON w.pet_id = p.id
+    ORDER BY w.balance DESC
+  `).all();
+  return rows;
+});
+
+app.get<{ Querystring: { limit?: string } }>("/api/world/economy/transactions", async (req) => {
+  const db = getDb();
+  const limit = parseInt(req.query.limit || "20");
+  const rows = db.prepare(`
+    SELECT t.id, t.amount, t.reason, t.description,
+      t.from_pet_id, t.to_pet_id, t.created_at,
+      p1.name as from_pet_name,
+      p2.name as to_pet_name
+    FROM transactions t
+    LEFT JOIN pets p1 ON t.from_pet_id = p1.id
+    LEFT JOIN pets p2 ON t.to_pet_id = p2.id
+    ORDER BY t.id DESC LIMIT ?
+  `).all(limit);
+  return rows;
+});
+
+app.get("/api/world/social-graph", async () => {
+  const db = getDb();
+  const pets = db.prepare(`
+    SELECT p.id, p.name, p.soul_json,
+      COALESCE(ps.location, 'hub') as location
+    FROM pets p LEFT JOIN pet_state ps ON p.id = ps.pet_id
+  `).all() as any[];
+
+  const nodes = pets.map(p => {
+    let mbti = "";
+    try { mbti = JSON.parse(p.soul_json || "{}").mbti || ""; } catch {}
+    return { id: p.id, name: p.name, mbti, location: p.location };
+  });
+
+  const rels = db.prepare(`
+    SELECT r.pet_id as "from", r.target_pet_id as "to",
+      r.affinity, r.trust, r.type as level
+    FROM relationships r
+  `).all();
+
+  return { nodes, edges: rels };
 });
 
 // ═══════════════════════════════════════
