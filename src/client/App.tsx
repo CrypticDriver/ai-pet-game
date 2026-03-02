@@ -6,10 +6,12 @@ import { ChatView } from "./components/ChatView.js";
 import { ShopView } from "./components/ShopView.js";
 import { WelcomeScreen } from "./components/WelcomeScreen.js";
 import { PlazaView } from "./components/PlazaView.js";
+import { WorldMapView } from "./components/WorldMapView.js";
+import { CivDashboard } from "./components/CivDashboard.js";
 import { detectEmotionFromText, parseServerAnimations } from "./engine/emotionDetector.js";
 import type { PetAnimState } from "./engine/petRenderer.js";
 
-type Tab = "pet" | "chat" | "shop" | "plaza";
+type Tab = "pet" | "chat" | "shop" | "plaza" | "map" | "civ";
 
 export default function App() {
   const [userId, setUserId] = useState<string | null>(() => localStorage.getItem("pet-userId"));
@@ -229,6 +231,8 @@ export default function App() {
         {tab === "plaza" && (
           <PlazaView petId={pet.id} petName={pet.name} onShowToast={showToast} onExitPlaza={() => setTab("pet")} />
         )}
+        {tab === "map" && <WorldMapView />}
+        {tab === "civ" && <CivDashboard />}
       </div>
 
       {/* Bottom Navigation — hidden in plaza landscape */}
@@ -245,6 +249,14 @@ export default function App() {
         <button className={tab === "shop" ? "active" : ""} onClick={() => setTab("shop")}>
           <span className="icon">🛍️</span>
           商城
+        </button>
+        <button className={tab === "map" ? "active" : ""} onClick={() => setTab("map")}>
+          <span className="icon">🗺️</span>
+          地图
+        </button>
+        <button className={tab === "civ" ? "active" : ""} onClick={() => setTab("civ")}>
+          <span className="icon">📊</span>
+          文明
         </button>
         <button className={tab === "plaza" ? "active" : ""} onClick={() => setTab("plaza")}>
           <span className="icon">🏞️</span>
