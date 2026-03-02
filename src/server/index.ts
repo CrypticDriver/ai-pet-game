@@ -51,6 +51,9 @@ import { initLocationSchema, getAllLocations, getLocation, getPetsInLocation, mo
 import { getSchedulerStats } from "./llm-scheduler.js";
 import { startAutonomousV2, stopAutonomousV2 } from "./autonomous-v2.js";
 import { talkToPet, lookAround, goTo, formatPerception } from "./world-tools.js";
+import { initRelationshipSchema, getRelationships, getRelationshipWith, recordInteraction, getClosestFriends } from "./relationships.js";
+import { initEconomySchema, getWallet, getBalance, doWork, transfer, getAvailableWork, getTransactionHistory, getEconomyStats } from "./economy.js";
+import { initGuildSchema, createGuild, joinGuild, leaveGuild, getGuildInfo, getPetGuild, listGuilds } from "./guilds.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -202,6 +205,9 @@ initMemorySchema();
 initSoulSchema();
 initMessageBusSchema();
 initLocationSchema();
+initRelationshipSchema();
+initEconomySchema();
+initGuildSchema();
 
 // Get online pets in plaza
 app.get("/api/plaza/pets", async () => {
@@ -344,6 +350,96 @@ app.post("/api/admin/autonomous-v2/stop", async () => {
   stopAutonomousV2();
   return { ok: true, message: "Autonomous v2 stopped" };
 });
+
+// ═══════════════════════════════════════
+// Phase 2: Relationships
+// ═══════════════════════════════════════
+
+app.get<{ Params: { petId: string } }>("/api/pet/:petId/relationships", async (req) => {
+  return getRelationships(req.params.petId);
+});
+
+app.get<{ Params: { petId: string; targetId: string } }>(
+  "/api/pet/:petId/relationship/:targetId",
+  async (req) => {
+    return getRelationshipWith(req.params.petId, req.params.targetId) || { error: "未找到" };
+  }
+);
+
+app.get<{ Params: { petId: string } }>("/api/pet/:petId/friends", async (req) => {
+  return getClosestFriends(req.params.petId, 10);
+});
+
+// ═══════════════════════════════════════
+// Phase 2: Economy
+// ═══════════════════════════════════════
+
+app.get<{ Params: { petId: string } }>("/api/pet/:petId/wallet", async (req) => {
+  return getWallet(req.params.petId);
+});
+
+app.get<{ Params: { petId: string } }>("/api/pet/:petId/work", async (req) => {
+  return getAvailableWork(req.params.petId);
+});
+
+app.post<{ Params: { petId: string }; Body: { job: string } }>(
+  "/api/pet/:petId/work",
+  async (req) => {
+    return doWork(req.params.petId, req.body.job);
+  }
+);
+
+app.post<{ Params: { petId: string }; Body: { targetPetId: string; amount: number; reason: "gift" | "trade" } }>(
+  "/api/pet/:petId/transfer",
+  async (req) => {
+    return transfer(req.params.petId, req.body.targetPetId, req.body.amount, req.body.reason);
+  }
+);
+
+app.get<{ Params: { petId: string } }>("/api/pet/:petId/transactions", async (req) => {
+  return getTransactionHistory(req.params.petId);
+});
+
+app.get("/api/world/economy", async () => {
+  return getEconomyStats();
+});
+
+// ═══════════════════════════════════════
+// Phase 2: Guilds
+// ═══════════════════════════════════════
+
+app.get("/api/guilds", async () => {
+  return listGuilds();
+});
+
+app.get<{ Params: { guildId: string } }>("/api/guild/:guildId", async (req) => {
+  return getGuildInfo(req.params.guildId) || { error: "公会不存在" };
+});
+
+app.get<{ Params: { petId: string } }>("/api/pet/:petId/guild", async (req) => {
+  return getPetGuild(req.params.petId) || { guild: null };
+});
+
+app.post<{ Body: { name: string; description: string; founderPetId: string; territory?: string } }>(
+  "/api/guild/create",
+  async (req) => {
+    return createGuild(req.body.name, req.body.description, req.body.founderPetId, req.body.territory);
+  }
+);
+
+app.post<{ Params: { guildId: string }; Body: { petId: string } }>(
+  "/api/guild/:guildId/join",
+  async (req) => {
+    return joinGuild(req.params.guildId, req.body.petId);
+  }
+);
+
+app.post<{ Params: { petId: string } }>(
+  "/api/pet/:petId/guild/leave",
+  async (req) => {
+    return leaveGuild(req.params.petId);
+  }
+);
 
 // Set pet location (room/plaza)
 app.post<{ Params: { petId: string }; Body: { location: "room" | "plaza" } }>(

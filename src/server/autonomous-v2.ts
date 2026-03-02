@@ -18,6 +18,9 @@ import { getPetLocationId, getPetsInLocation } from "./locations.js";
 import { hasStimulus, classifyPriority, think } from "./llm-scheduler.js";
 import { safetyFilter } from "./safety-guard.js";
 import { broadcastMessage } from "./message-bus.js";
+import { relationshipsToPrompt } from "./relationships.js";
+import { walletToPrompt, doWork } from "./economy.js";
+import { guildToPrompt } from "./guilds.js";
 
 // ── Autonomous Tick (v2) ──
 
@@ -57,6 +60,9 @@ export async function autonomousTickV2(petId: string) {
   const soul = getPetSoul(petId);
   const memory = buildMemoryContext(petId);
   const perception = formatPerception(petId);
+  const relationships = relationshipsToPrompt(petId);
+  const wallet = walletToPrompt(petId);
+  const guild = guildToPrompt(petId);
 
   const inboxText = inbox.length > 0
     ? `\n## 有人找你\n${inbox.map(m => {
@@ -72,6 +78,15 @@ ${perception}
 - 你的心情：${pet.mood}% | 能量：${pet.energy}% | 饱腹：${pet.hunger}%
 ${inboxText}
 
+## 你认识的Pix
+${relationships}
+
+## 经济
+${wallet}
+
+## 公会
+${guild}
+
 ## 你的记忆
 ${memory}
 
@@ -82,6 +97,7 @@ ${memory}
 - [说话] 对象名: 你要说的话
 - [去] 地点名
 - [广播] 你想大声说的话（附近所有Pix都能听到）
+- [工作] 工作名称（在当前地点打工赚PixelCoin）
 - [行动] 描述你在做什么（发呆、看书、散步...）
 - [想法] 你心里在想什么（不会被别人听到）
 
@@ -142,6 +158,19 @@ async function executeResponse(petId: string, response: string) {
     const locationId = getPetLocationId(petId);
     broadcastMessage(petId, locationId, broadcastMatch[1].trim());
     updateAction(petId, "说了些什么");
+    return;
+  }
+
+  // [工作] 工作名称
+  const workMatch = response.match(/\[工作\]\s*(.+)/);
+  if (workMatch) {
+    const result = doWork(petId, workMatch[1].trim());
+    if (result.ok) {
+      updateAction(petId, `在打工：${workMatch[1].trim()}`);
+      logActivity(petId, "work", `${workMatch[1].trim()} 赚了${result.pay}币`);
+    } else {
+      updateAction(petId, "想打工但没成功");
+    }
     return;
   }
 

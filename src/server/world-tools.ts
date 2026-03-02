@@ -16,6 +16,7 @@ import { sendMessage, getLocationBroadcasts } from "./message-bus.js";
 import { getLocation, getPetsInLocation, movePet, getRecentEvents, getPetLocationId } from "./locations.js";
 import { isFirstMeeting, recordFirstMeeting, createConversationMemory } from "./memory.js";
 import { safetyFilter } from "./safety-guard.js";
+import { recordInteraction } from "./relationships.js";
 
 // ── talk_to_pet ──
 
@@ -53,6 +54,10 @@ export async function talkToPet(
   // Record messages
   sendMessage(fromPetId, target.pet_id, message, { emotion: "social" });
   sendMessage(target.pet_id, fromPetId, reply, { emotion: "social" });
+
+  // Record interaction for relationship system (both directions)
+  recordInteraction(fromPetId, target.pet_id, "positive");
+  recordInteraction(target.pet_id, fromPetId, "positive");
 
   // Create conversation memory for both
   const toPet = getPet(target.pet_id);
