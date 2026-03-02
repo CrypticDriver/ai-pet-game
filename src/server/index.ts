@@ -46,6 +46,9 @@ import { getWorldviewInfo } from "./worldview.js";
 import { compressAllMemories, initMemorySchema } from "./memory.js";
 import { initSoulSchema, evolveAllSouls, reflectAllPets } from "./soul.js";
 import { runSocialHealthCheck } from "./social-health.js";
+import { initMessageBusSchema, getMessageStats, cleanupExpiredMessages } from "./message-bus.js";
+import { initLocationSchema, getAllLocations, getLocation, getPetsInLocation, movePet, getLocationPopulations, getRecentEvents, createLocationEvent } from "./locations.js";
+import { getSchedulerStats } from "./llm-scheduler.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -195,6 +198,8 @@ initPlazaSchema();
 initAutonomousSchema();
 initMemorySchema();
 initSoulSchema();
+initMessageBusSchema();
+initLocationSchema();
 
 // Get online pets in plaza
 app.get("/api/plaza/pets", async () => {
@@ -255,6 +260,53 @@ app.get<{ Params: { petId: string } }>("/api/pet/:petId/insights", async (req) =
 app.get<{ Params: { petId: string } }>("/api/pet/:petId/social-health", async (req) => {
   const { checkSocialHealth } = await import("./social-health.js");
   return checkSocialHealth(req.params.petId);
+});
+
+// ── World / Location APIs ──
+
+// Get all locations
+app.get("/api/world/locations", async () => {
+  return getAllLocations();
+});
+
+// Get location details + pets there
+app.get<{ Params: { locationId: string } }>("/api/world/location/:locationId", async (req) => {
+  const loc = getLocation(req.params.locationId);
+  if (!loc) return { error: "Location not found" };
+  const pets = getPetsInLocation(req.params.locationId);
+  const events = getRecentEvents(req.params.locationId, 60);
+  return { ...loc, pets, events };
+});
+
+// Get world map (locations + populations)
+app.get("/api/world/map", async () => {
+  const locations = getAllLocations();
+  const populations = getLocationPopulations();
+  const popMap = Object.fromEntries(populations.map(p => [p.location_id, p.count]));
+  return locations.map(loc => ({
+    ...loc,
+    petCount: popMap[loc.id] || 0,
+    connects_to: JSON.parse(loc.connects_to || "[]"),
+    ambient: JSON.parse(loc.ambient || "{}"),
+  }));
+});
+
+// Move pet to a new location
+app.post<{ Params: { petId: string }; Body: { destination: string } }>(
+  "/api/pet/:petId/move",
+  async (req) => {
+    return movePet(req.params.petId, req.body.destination);
+  }
+);
+
+// Get message stats
+app.get("/api/world/message-stats", async () => {
+  return getMessageStats();
+});
+
+// Get scheduler stats
+app.get("/api/world/scheduler-stats", async () => {
+  return getSchedulerStats();
 });
 
 // Set pet location (room/plaza)
@@ -361,6 +413,15 @@ setInterval(() => {
 setTimeout(() => {
   try { runSocialHealthCheck(); } catch {}
 }, 30000);
+
+// ---- Message cleanup (every hour) ----
+
+setInterval(() => {
+  try {
+    const cleaned = cleanupExpiredMessages();
+    if (cleaned > 0) console.log(`🗑️ Cleaned ${cleaned} expired messages`);
+  } catch {}
+}, 60 * 60 * 1000);
 
 // ---- Notification generation (every 15 minutes) ----
 

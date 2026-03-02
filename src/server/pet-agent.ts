@@ -259,3 +259,36 @@ export async function chat(petId: string, userMessage: string): Promise<{ text: 
 export function refreshAgent(petId: string) {
   agents.delete(petId);
 }
+
+/**
+ * Chat as a pet using a specific model override.
+ * Used by LLM scheduler for model-tiered thinking.
+ */
+export async function chatAsPetWithModel(
+  petId: string,
+  prompt: string,
+  _model?: string
+): Promise<string> {
+  const agent = getOrCreateAgent(petId);
+
+  return new Promise((resolve, reject) => {
+    let fullResponse = "";
+    const unsub = agent.subscribe((event) => {
+      if (event.type === "message_update") {
+        const aEvent = (event as any).assistantMessageEvent;
+        if (aEvent?.type === "text_delta") {
+          fullResponse += aEvent.delta;
+        }
+      }
+      if (event.type === "agent_end") {
+        unsub();
+        fullResponse = fullResponse.replace(/<thinking>[\s\S]*?<\/thinking>\s*/g, "").trim();
+        resolve(fullResponse);
+      }
+    });
+    agent.prompt(prompt).catch((err) => {
+      unsub();
+      reject(err);
+    });
+  });
+}
