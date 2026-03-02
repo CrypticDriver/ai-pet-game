@@ -54,6 +54,11 @@ import { talkToPet, lookAround, goTo, formatPerception } from "./world-tools.js"
 import { initRelationshipSchema, getRelationships, getRelationshipWith, recordInteraction, getClosestFriends } from "./relationships.js";
 import { initEconomySchema, getWallet, getBalance, doWork, transfer, getAvailableWork, getTransactionHistory, getEconomyStats } from "./economy.js";
 import { initGuildSchema, createGuild, joinGuild, leaveGuild, getGuildInfo, getPetGuild, listGuilds } from "./guilds.js";
+import {
+  initEmergenceSchema, getWorldHistory, getCulturalMemories, getEmergenceStats,
+  detectGuildFormation, detectCulturalPatterns, detectEconomicTrends,
+  recordWorldEvent, startEmergenceEngine, stopEmergenceEngine
+} from "./emergence.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -208,6 +213,7 @@ initLocationSchema();
 initRelationshipSchema();
 initEconomySchema();
 initGuildSchema();
+initEmergenceSchema();
 
 // Get online pets in plaza
 app.get("/api/plaza/pets", async () => {
@@ -438,6 +444,51 @@ app.post<{ Params: { petId: string } }>(
   "/api/pet/:petId/guild/leave",
   async (req) => {
     return leaveGuild(req.params.petId);
+  }
+);
+
+// ═══════════════════════════════════════
+// Phase 3: Emergence + Culture + History
+// ═══════════════════════════════════════
+
+app.get("/api/world/history", async (req) => {
+  const limit = Number((req.query as any).limit) || 50;
+  return getWorldHistory(limit);
+});
+
+app.get("/api/world/culture", async (req) => {
+  const limit = Number((req.query as any).limit) || 20;
+  return getCulturalMemories(limit);
+});
+
+app.get("/api/world/emergence", async () => {
+  return getEmergenceStats();
+});
+
+app.post("/api/admin/emergence/detect", async () => {
+  const [guilds, culture, economy] = await Promise.all([
+    detectGuildFormation(),
+    detectCulturalPatterns(),
+    detectEconomicTrends(),
+  ]);
+  return { guilds, culture, economy };
+});
+
+app.post("/api/admin/emergence/start", async () => {
+  startEmergenceEngine();
+  return { ok: true, message: "Emergence engine started" };
+});
+
+app.post("/api/admin/emergence/stop", async () => {
+  stopEmergenceEngine();
+  return { ok: true, message: "Emergence engine stopped" };
+});
+
+app.post<{ Body: { eventType: string; title: string; description: string; petIds?: string[] } }>(
+  "/api/world/history/record",
+  async (req) => {
+    recordWorldEvent(req.body.eventType, req.body.title, req.body.description, req.body.petIds || []);
+    return { ok: true };
   }
 );
 
