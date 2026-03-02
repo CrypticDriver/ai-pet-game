@@ -49,6 +49,8 @@ import { runSocialHealthCheck } from "./social-health.js";
 import { initMessageBusSchema, getMessageStats, cleanupExpiredMessages } from "./message-bus.js";
 import { initLocationSchema, getAllLocations, getLocation, getPetsInLocation, movePet, getLocationPopulations, getRecentEvents, createLocationEvent } from "./locations.js";
 import { getSchedulerStats } from "./llm-scheduler.js";
+import { startAutonomousV2, stopAutonomousV2 } from "./autonomous-v2.js";
+import { talkToPet, lookAround, goTo, formatPerception } from "./world-tools.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -307,6 +309,40 @@ app.get("/api/world/message-stats", async () => {
 // Get scheduler stats
 app.get("/api/world/scheduler-stats", async () => {
   return getSchedulerStats();
+});
+
+// ── World Tool APIs ──
+
+// Pet talks to another pet (LLM-to-LLM)
+app.post<{ Params: { petId: string }; Body: { targetName: string; message: string } }>(
+  "/api/pet/:petId/talk",
+  async (req) => {
+    return talkToPet(req.params.petId, req.body.targetName, req.body.message);
+  }
+);
+
+// Pet looks around
+app.get<{ Params: { petId: string } }>("/api/pet/:petId/perception", async (req) => {
+  return lookAround(req.params.petId);
+});
+
+// Pet goes somewhere
+app.post<{ Params: { petId: string }; Body: { destination: string } }>(
+  "/api/pet/:petId/goto",
+  async (req) => {
+    return goTo(req.params.petId, req.body.destination);
+  }
+);
+
+// Start/stop autonomous v2 (admin)
+app.post("/api/admin/autonomous-v2/start", async () => {
+  startAutonomousV2();
+  return { ok: true, message: "Autonomous v2 started" };
+});
+
+app.post("/api/admin/autonomous-v2/stop", async () => {
+  stopAutonomousV2();
+  return { ok: true, message: "Autonomous v2 stopped" };
 });
 
 // Set pet location (room/plaza)
