@@ -59,6 +59,7 @@ import {
   detectGuildFormation, detectCulturalPatterns, detectEconomicTrends,
   recordWorldEvent, startEmergenceEngine, stopEmergenceEngine
 } from "./emergence.js";
+import { initLanguageSchema, getEvolvedTerms, getLanguageStats } from "./language.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -214,6 +215,7 @@ initRelationshipSchema();
 initEconomySchema();
 initGuildSchema();
 initEmergenceSchema();
+initLanguageSchema();
 
 // Get online pets in plaza
 app.get("/api/plaza/pets", async () => {
@@ -491,6 +493,19 @@ app.post<{ Body: { eventType: string; title: string; description: string; petIds
     return { ok: true };
   }
 );
+
+// ═══════════════════════════════════════
+// Phase 3: Language Evolution
+// ═══════════════════════════════════════
+
+app.get("/api/world/language", async () => {
+  return getLanguageStats();
+});
+
+app.get("/api/world/language/terms", async (req) => {
+  const status = (req.query as any).status;
+  return getEvolvedTerms(status || undefined);
+});
 
 // Set pet location (room/plaza)
 app.post<{ Params: { petId: string }; Body: { location: "room" | "plaza" } }>(

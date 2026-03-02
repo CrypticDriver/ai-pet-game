@@ -17,6 +17,7 @@ import { getLocation, getPetsInLocation, movePet, getRecentEvents, getPetLocatio
 import { isFirstMeeting, recordFirstMeeting, createConversationMemory } from "./memory.js";
 import { safetyFilter } from "./safety-guard.js";
 import { recordInteraction } from "./relationships.js";
+import { detectNewTerms } from "./language.js";
 
 // ── talk_to_pet ──
 
@@ -58,6 +59,10 @@ export async function talkToPet(
   // Record interaction for relationship system (both directions)
   recordInteraction(fromPetId, target.pet_id, "positive");
   recordInteraction(target.pet_id, fromPetId, "positive");
+
+  // Detect new language terms from both sides
+  detectNewTerms(fromPetId, message).catch(() => {});
+  detectNewTerms(target.pet_id, reply).catch(() => {});
 
   // Create conversation memory for both
   const toPet = getPet(target.pet_id);

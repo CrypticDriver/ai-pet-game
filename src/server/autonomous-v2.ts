@@ -21,6 +21,8 @@ import { broadcastMessage } from "./message-bus.js";
 import { relationshipsToPrompt } from "./relationships.js";
 import { walletToPrompt, doWork } from "./economy.js";
 import { guildToPrompt } from "./guilds.js";
+import { getCulturalMemories, getWorldHistory } from "./emergence.js";
+import { getPopularTermsForPrompt, detectNewTerms } from "./language.js";
 
 // ── Autonomous Tick (v2) ──
 
@@ -89,6 +91,8 @@ ${guild}
 
 ## 你的记忆
 ${memory}
+${buildCultureContext()}
+${getPopularTermsForPrompt()}
 
 ## 你现在想做什么？
 
@@ -128,6 +132,29 @@ ${memory}
 /**
  * Parse and execute the LLM's decision
  */
+/** Build culture/history context for LLM prompt */
+function buildCultureContext(): string {
+  const parts: string[] = [];
+
+  const recentHistory = getWorldHistory(3);
+  if (recentHistory.length > 0) {
+    parts.push("## PixelVerse最近发生的事");
+    for (const ev of recentHistory) {
+      parts.push(`- ${ev.title}: ${ev.description.slice(0, 60)}`);
+    }
+  }
+
+  const culture = getCulturalMemories(3);
+  if (culture.length > 0) {
+    parts.push("## 大家都知道的事");
+    for (const cm of culture) {
+      parts.push(`- ${cm.title.slice(0, 40)}`);
+    }
+  }
+
+  return parts.join("\n");
+}
+
 async function executeResponse(petId: string, response: string) {
   const db = getDb();
 
